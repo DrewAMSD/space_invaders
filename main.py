@@ -4,7 +4,7 @@ from player import *
 def main() -> None:
     # setup
     pygame.init()
-    screen: pygame.Surface = pygame.display.set_mode((1280, 720))
+    screen: pygame.Surface = pygame.display.set_mode((1280, 900))
     pygame.display.set_caption("Space Invaders")
     clock: pygame.time.Clock = pygame.time.Clock()
     
@@ -19,9 +19,6 @@ def main() -> None:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-        
-        # fill background wiping away previous frame
-        screen.fill("black")
 
         # run game
         fill_frame(screen, clock, dt, player)
@@ -37,12 +34,19 @@ def main() -> None:
     pygame.quit()
 
 def fill_frame(screen: pygame.Surface, clock: pygame.time.Clock, dt: float, player: Player) -> None:
+    # fill background wiping away previous frame
+    screen.fill("black")
+    # bottom boundary rectangle
+    pygame.draw.rect(screen, pygame.Color(0, 255, 0), pygame.Rect(68, screen.get_height() - 40, screen.get_width() - 136, 5))
+    
     # check player input
     keys = pygame.key.get_pressed()
     if keys[pygame.K_LEFT]: 
         player.move(screen, -1, dt) # move left
     if keys[pygame.K_RIGHT]:
         player.move(screen, 1, dt) # move right
+    if keys[pygame.K_SPACE]: # shoot laser
+        player.shoot
 
     # draw all objects
     player.draw(screen)
