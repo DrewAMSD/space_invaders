@@ -45,8 +45,7 @@ def fill_frame(screen: pygame.Surface, clock: pygame.time.Clock, dt: float, play
         player.move(screen, -1, dt) # move left
     if keys[pygame.K_RIGHT]:
         player.move(screen, 1, dt) # move right
-    if keys[pygame.K_SPACE]: # shoot laser
-        player.shoot
+    # if keys[pygame.K_SPACE]: # shoot laser
 
     # draw all objects
     player.draw(screen)
