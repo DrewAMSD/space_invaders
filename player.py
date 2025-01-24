@@ -7,6 +7,9 @@ class Player:
         self.speed: int = 300 # pixels per second
         self.color: pygame.Color = pygame.Color(0, 255, 0)
 
+    def get_pos(self) -> pygame.Vector2:
+        return self.pos
+
     def move(self, screen: pygame.Surface, direction: int, dt: float) -> None:
         # update player position
         self.pos.x = self.pos.x + (self.speed * dt * direction)
