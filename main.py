@@ -47,15 +47,15 @@ def update_physics(screen: pygame.Surface, dt: float, player: Player, player_pro
         player_shoot(screen, player, player_projectiles) # shoot laser
 
     if player_projectiles[0] is not None:
-        on_screen: bool = player_projectiles[0].move(screen, dt)
-        if not on_screen:
+        player_projectile_on_screen: bool = player_projectiles[0].move(screen, dt)
+        if not player_projectile_on_screen:
             player_projectiles[0] = None
 
 def player_shoot(screen: pygame.Surface, player: Player, player_projectiles: list) -> None:
     if player_projectiles[0] is not None: 
         return None
     player_pos: pygame.Vector2 = player.get_pos()
-    player_projectiles[0] = Projectile("laser", player_pos.x - 2, player_pos.y - 34)
+    player_projectiles[0] = Projectile("laser", player_pos.x - 2, player_pos.y - 34, -1)
 
 def fill_frame(screen: pygame.Surface, player: Player, player_projectiles: list) -> None:
     # fill background wiping away previous frame
