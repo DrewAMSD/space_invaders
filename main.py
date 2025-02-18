@@ -1,11 +1,12 @@
 import pygame
+from pygame import Vector2, Surface, Color
 from player import *
 from projectile import *
 
 def main() -> None:
     # setup
     pygame.init()
-    screen: pygame.Surface = pygame.display.set_mode((1280, 900))
+    screen: Surface = pygame.display.set_mode((1280, 900))
     pygame.display.set_caption("Space Invaders")
     clock: pygame.time.Clock = pygame.time.Clock()
     
@@ -36,7 +37,7 @@ def main() -> None:
     # end game
     pygame.quit()
 
-def update_physics(screen: pygame.Surface, dt: float, player: Player, player_projectiles: list) -> None:
+def update_physics(screen: Surface, dt: float, player: Player, player_projectiles: list) -> None:
     # check player input
     keys = pygame.key.get_pressed()
     if keys[pygame.K_LEFT]:
@@ -51,17 +52,17 @@ def update_physics(screen: pygame.Surface, dt: float, player: Player, player_pro
         if not player_projectile_on_screen:
             player_projectiles[0] = None
 
-def player_shoot(screen: pygame.Surface, player: Player, player_projectiles: list) -> None:
+def player_shoot(screen: Surface, player: Player, player_projectiles: list) -> None:
     if player_projectiles[0] is not None: 
         return None
-    player_pos: pygame.Vector2 = player.get_pos()
-    player_projectiles[0] = Projectile("laser", player_pos.x - 2, player_pos.y - 34, -1)
+    player_pos: Vector2 = player.get_pos()
+    player_projectiles[0] = Projectile("laser", player_pos.x + 30, player_pos.y - 34, -1)
 
-def fill_frame(screen: pygame.Surface, player: Player, player_projectiles: list) -> None:
+def fill_frame(screen: Surface, player: Player, player_projectiles: list) -> None:
     # fill background wiping away previous frame
     screen.fill("black")
     # bottom boundary rectangle
-    pygame.draw.rect(screen, pygame.Color(0, 255, 0), pygame.Rect(68, screen.get_height() - 40, screen.get_width() - 136, 5))
+    pygame.draw.rect(screen, Color(0, 255, 0), pygame.Rect(68, screen.get_height() - 40, screen.get_width() - 136, 5))
 
     # draw all objects
     player.draw(screen)
