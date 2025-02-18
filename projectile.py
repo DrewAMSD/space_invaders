@@ -2,13 +2,13 @@ import pygame
 from pygame import Vector2, Surface, Color
 
 class Projectile:
-    def __init__(self, projectile_type: str, x: int, y: int, dir: int) -> None:
+    def __init__(self, projectile_type: str, x: int, y: int, direction_input: int) -> None:
         self.projectile_type: str = projectile_type
         self.pos: Vector2 = Vector2(x, y)
         self.hitbox: Vector2 = Vector2(10, 10)
         self.speed: int = 10
         self.color: Color = Color(255, 255, 255)
-        self.direction = dir
+        self.direction = direction_input
 
         match self.projectile_type:
             case "laser":

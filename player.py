@@ -18,11 +18,11 @@ class Player:
         # update player position
         self.pos.x = self.pos.x + (self.speed * dt * direction)
         # limit left direction
-        if self.pos.x < 100:
-            self.pos.x = 100
+        if self.pos.x < 68:
+            self.pos.x = 68
         # limit right direction
-        if self.pos.x > (screen.get_width() - 100): 
-            self.pos.x = screen.get_width() - 100
+        if self.pos.x > (screen.get_width() - 132): 
+            self.pos.x = screen.get_width() - 132
 
     def draw(self, screen: Surface) -> None:
         # base (hitbox region)
