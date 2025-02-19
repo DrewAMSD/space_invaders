@@ -2,6 +2,7 @@ import pygame
 from pygame import Vector2, Surface, Color
 from player import *
 from projectile import *
+from alien import *
 
 def main() -> None:
     # setup
@@ -15,6 +16,8 @@ def main() -> None:
     dt: float = 0
     player: Player = Player(screen)
     player_projectiles: list = [None]
+    alien_wave: int = 0
+    aliens: list = generate_new_swarm(alien_wave)
 
     # event loop
     while running:
@@ -24,8 +27,8 @@ def main() -> None:
                 running = False
 
         # run game
-        update_physics(screen, dt, player, player_projectiles)
-        fill_frame(screen, player, player_projectiles)
+        update_physics(screen, dt, player, player_projectiles, aliens)
+        fill_frame(screen, player, player_projectiles, aliens)
 
         # flip display to put new frame onto screen
         pygame.display.flip()
@@ -37,7 +40,23 @@ def main() -> None:
     # end game
     pygame.quit()
 
-def update_physics(screen: Surface, dt: float, player: Player, player_projectiles: list) -> None:
+def generate_new_swarm(wave: int) -> list:
+    swarm: list = []
+    for r in range(5):
+        row: list = []
+        for c in range(11):
+            if r == 1:
+                row.append(Alien("Shooter", r, c, wave))
+            elif r == 2 or r == 3:
+                row.append(Alien("Brute", r, c, wave))
+            else:
+                row.append(Alien("Tank", r, c, wave))
+        swarm.append(row)
+    return swarm
+
+
+
+def update_physics(screen: Surface, dt: float, player: Player, player_projectiles: list, aliens: list) -> None:
     # check player input
     keys = pygame.key.get_pressed()
     if keys[pygame.K_LEFT]:
@@ -58,7 +77,7 @@ def player_shoot(screen: Surface, player: Player, player_projectiles: list) -> N
     player_pos: Vector2 = player.get_pos()
     player_projectiles[0] = Projectile("laser", player_pos.x + 30, player_pos.y - 34, -1)
 
-def fill_frame(screen: Surface, player: Player, player_projectiles: list) -> None:
+def fill_frame(screen: Surface, player: Player, player_projectiles: list, aliens: list) -> None:
     # fill background wiping away previous frame
     screen.fill("black")
     # bottom boundary rectangle
@@ -66,6 +85,9 @@ def fill_frame(screen: Surface, player: Player, player_projectiles: list) -> Non
 
     # draw all objects
     player.draw(screen)
+    for row in aliens:
+        for alien in row:
+            alien.draw(screen)
     if player_projectiles[0] is not None:
         player_projectiles[0].draw(screen)
 

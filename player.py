@@ -7,12 +7,16 @@ class Player:
         self.hitbox: Vector2 = Vector2(64, 20) # 32 pixels left and right from self.pos.x, and 20 pixels down from self.pos.y
         self.speed: int = 300 # pixels per second
         self.color: Color = Color(0, 255, 0)
+        self.lives = 3
 
     def get_pos(self) -> Vector2:
         return self.pos
 
     def get_hitbox(self) -> Vector2:
         return self.hitbox
+
+    def get_lives(self):
+        return self.lives
 
     def move(self, screen: Surface, direction: int, dt: float) -> None:
         # update player position
