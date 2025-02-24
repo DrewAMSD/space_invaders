@@ -54,8 +54,6 @@ def generate_new_swarm(wave: int) -> list:
         swarm.append(row)
     return swarm
 
-
-
 def update_physics(screen: Surface, dt: float, player: Player, player_projectiles: list, aliens: list) -> None:
     # check player input
     keys = pygame.key.get_pressed()
@@ -66,10 +64,42 @@ def update_physics(screen: Surface, dt: float, player: Player, player_projectile
     if keys[pygame.K_SPACE]:
         player_shoot(screen, player, player_projectiles) # shoot laser
 
+    # check for collisions
+    check_collisions(screen, dt, player, player_projectiles, aliens)
+
+def check_collisions(screen: Surface, dt: float, player: Player, player_projectiles: list, aliens: list) -> None:
+    # remove projectiles if they collide with end of screen/wall
     if player_projectiles[0] is not None:
         player_projectile_on_screen: bool = player_projectiles[0].move(screen, dt)
         if not player_projectile_on_screen:
             player_projectiles[0] = None
+    
+    # check for collisions between aliens and player projectile
+    for r in range(len(aliens)):
+        if player_projectiles[0] is None: break
+        for c in range(len(aliens[r])):
+            if aliens[r][c] is None: 
+                continue
+            if rect_collision(player_projectiles[0].get_pos(), player_projectiles[0].get_hitbox(), aliens[r][c].get_pos(), aliens[r][c].get_hitbox()):
+                aliens[r][c] = None # replace with death animation later
+                player_projectiles[0] = None
+                break
+
+def rect_collision(obj1_pos: Vector2, obj1_hitbox: Vector2, obj2_pos: Vector2, obj2_hitbox: Vector2) -> bool:
+    # n = north, e = east, s = south, w = west
+    # ob1 coordinates
+    w1 = obj1_pos.x
+    e1 = w1 + obj1_hitbox.x
+    n1 = obj1_pos.y
+    s1 = n1 + obj1_hitbox.y
+    # obj2 coordinates
+    w2 = obj2_pos.x
+    e2 = w2 + obj2_hitbox.x
+    n2 = obj2_pos.y
+    s2 = n2 + obj2_hitbox.y
+    # east side is to the right of the west side of the other object
+    # south side is below the north side of the other object 
+    return w1 < e2 and w2 < e1 and n1 < s2 and n2 < s1
 
 def player_shoot(screen: Surface, player: Player, player_projectiles: list) -> None:
     if player_projectiles[0] is not None: 
@@ -87,6 +117,8 @@ def fill_frame(screen: Surface, player: Player, player_projectiles: list, aliens
     player.draw(screen)
     for row in aliens:
         for alien in row:
+            if alien is None: 
+                continue
             alien.draw(screen)
     if player_projectiles[0] is not None:
         player_projectiles[0].draw(screen)
