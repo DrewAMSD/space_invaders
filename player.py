@@ -8,7 +8,7 @@ class Player:
         self.hitbox: Vector2 = Vector2(64, 20) # 32 pixels left and right from self.pos.x, and 20 pixels down from self.pos.y
         self.speed: int = 300 # pixels per second
         self.color: Color = Color(0, 255, 0)
-        self.lives = 3
+        self.lives: int = 3
 
     def get_pos(self) -> Vector2:
         return self.pos
@@ -16,18 +16,18 @@ class Player:
     def get_hitbox(self) -> Vector2:
         return self.hitbox
 
-    def get_lives(self):
+    def get_lives(self) -> int:
         return self.lives
 
     def move(self, direction: int, dt: float) -> None:
         # update player position
         self.pos.x = self.pos.x + (self.speed * dt * direction)
         # limit left direction
-        if self.pos.x < 68:
-            self.pos.x = 68
+        if self.pos.x < constants.SCREEN_BOUND_X:
+            self.pos.x = constants.SCREEN_BOUND_X
         # limit right direction
-        if self.pos.x > (constants.SCREEN_SIZE.x - 132): 
-            self.pos.x = constants.SCREEN_SIZE.x - 132
+        if self.pos.x > (constants.SCREEN_SIZE.x - constants.SCREEN_BOUND_X - self.hitbox.x): 
+            self.pos.x = constants.SCREEN_SIZE.x - constants.SCREEN_BOUND_X - self.hitbox.x
 
     def draw(self, screen: Surface) -> None:
         # base (hitbox region)

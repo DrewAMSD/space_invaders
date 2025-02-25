@@ -20,8 +20,12 @@ def main() -> None:
     player: Player = Player()
     player_projectiles: list = [None]
     # alien swarm state
-    swarm_location: Vector2 = Vector2(40, 40) # northwest (top-left) of swarm location   
-    swarm: list = generate_new_swarm(wave, swarm_location)
+    swarm_data: dict = {
+        "location": Vector2((screen.get_width() / 2) - (constants.SWARM_LENGTH / 2), 40), # northwest (top-left) of swarm location
+        "timer": constants.SWARM_TIMER, # time until swarm can move in seconds
+        "direction": 1,
+    }
+    swarm: list = generate_new_swarm(wave, swarm_data)
 
     # event loop
     while running:
@@ -31,7 +35,7 @@ def main() -> None:
                 running = False
 
         # run game
-        update_physics(screen, dt, player, player_projectiles, swarm)
+        update_physics(screen, dt, player, player_projectiles, swarm, swarm_data)
         fill_frame(screen, player, player_projectiles, swarm)
 
         # flip display to put new frame onto screen
@@ -44,24 +48,26 @@ def main() -> None:
     # end game
     pygame.quit()
 
-def generate_new_swarm(wave: int, swarm_location: Vector2) -> list:
+def generate_new_swarm(wave: int, swarm_data: dict) -> list:
     wave -= 1
     swarm: list = []
     for r in range(constants.SWARM_ROWS):
         row: list = []
         for c in range(constants.SWARM_COLS):
-            x: int = c * (constants.ALIEN_HITBOX_X + constants.ALIEN_OFFSET_X) + swarm_location.x
-            y: int = r * (constants.ALIEN_HITBOX_Y + constants.ALIEN_OFFSET_Y) + swarm_location.y
+            x: int = c * (constants.ALIEN_HITBOX_X + constants.ALIEN_OFFSET_X) + swarm_data["location"].x
+            y: int = r * (constants.ALIEN_HITBOX_Y + constants.ALIEN_OFFSET_Y) + swarm_data["location"].y
+            alien_type: str = ""
             if r == 0:
-                row.append(Alien("Shooter", x, y, constants.ALIEN_HITBOX_X, constants.ALIEN_HITBOX_Y, wave))
+                alien_type = "shooter"
             elif r == 1 or r == 2:
-                row.append(Alien("Brute", x, y, constants.ALIEN_HITBOX_X, constants.ALIEN_HITBOX_Y, wave))
+                alien_type = "brute"
             else:
-                row.append(Alien("Tank", x, y, constants.ALIEN_HITBOX_X, constants.ALIEN_HITBOX_Y, wave))
+                alien_type = "tank"
+            row.append(Alien(alien_type, x, y, constants.ALIEN_HITBOX_X, constants.ALIEN_HITBOX_Y, wave))
         swarm.append(row)
     return swarm
 
-def update_physics(screen: Surface, dt: float, player: Player, player_projectiles: list, swarm: list) -> None:
+def update_physics(screen: Surface, dt: float, player: Player, player_projectiles: list, swarm: list, swarm_data: dict) -> None:
     # check player input
     keys = pygame.key.get_pressed()
     if keys[pygame.K_LEFT]:
@@ -70,9 +76,41 @@ def update_physics(screen: Surface, dt: float, player: Player, player_projectile
         player.move(1, dt) # move right
     if keys[pygame.K_SPACE]:
         player_shoot(screen, player, player_projectiles) # shoot laser
-
+    
+    # check if enough time has passed for swarm to move
+    swarm_data["timer"] -= dt
+    if swarm_data["timer"] <= 0:
+        move_swarm(swarm, swarm_data)
     # check for collisions
     check_collisions(screen, dt, player, player_projectiles, swarm)
+
+def move_swarm(swarm: list, swarm_data: dict) -> None:
+    # check if you need to move swarm up or down
+    if swarm_reached_edge(swarm_data):
+        swarm_data["direction"] *= -1
+        swarm_data["location"].y += constants.SWARM_MOV_Y
+    else:
+        # move swarm left or right
+        swarm_data["location"].x = swarm_data["location"].x + (constants.SWARM_MOV_X * swarm_data["direction"])
+        if swarm_data["location"].x < constants.SCREEN_BOUND_X:
+            swarm_data["location"].x = constants.SCREEN_BOUND_X
+        elif swarm_data["location"].x + constants.SWARM_LENGTH > constants.SCREEN_SIZE.x - constants.SCREEN_BOUND_X:
+            swarm_data["location"].x = constants.SCREEN_SIZE.x - constants.SCREEN_BOUND_X - constants.SWARM_LENGTH
+
+    swarm_data["timer"] = constants.SWARM_TIMER
+    update_alien_locations(swarm, swarm_data)
+
+def swarm_reached_edge(swarm_data: dict) -> bool:
+    return (swarm_data["location"].x == constants.SCREEN_BOUND_X and swarm_data["direction"] == -1) or (swarm_data["location"].x + constants.SWARM_LENGTH == constants.SCREEN_SIZE.x - constants.SCREEN_BOUND_X and swarm_data["direction"] == 1)
+
+def update_alien_locations(swarm: list, swarm_data: dict) -> None:
+    for r in range(constants.SWARM_ROWS):
+        for c in range(constants.SWARM_COLS):
+            if swarm[r][c] is None:
+                continue
+            x: int = c * (constants.ALIEN_HITBOX_X + constants.ALIEN_OFFSET_X) + swarm_data["location"].x
+            y: int = r * (constants.ALIEN_HITBOX_Y + constants.ALIEN_OFFSET_Y) + swarm_data["location"].y
+            swarm[r][c].update_pos(x, y)
 
 def check_collisions(screen: Surface, dt: float, player: Player, player_projectiles: list, swarm: list) -> None:
     # remove player projectile if it collides with end of screen

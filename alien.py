@@ -10,13 +10,13 @@ class Alien:
         self.color: Color = Color(255, 255, 255)
         # START remove later
         match self.type:
-            case "Shooter":
+            case "shooter":
                 self.color.g = 0
                 self.color.b = 0
-            case "Brute":
+            case "brute":
                 self.color.r = 0
                 self.color.b = 0
-            case "Tank":
+            case "tank":
                 self.color.r = 0
                 self.color.g = 0
             case _:
@@ -28,6 +28,10 @@ class Alien:
 
     def get_hitbox(self) -> Vector2:
         return self.hitbox
+
+    def update_pos(self, new_x: int, new_y: int) -> None:
+        self.pos.x = new_x
+        self.pos.y = new_y
 
     def draw(self, screen: Surface) -> None:
         pygame.draw.rect(screen, self.color, pygame.Rect(self.pos.x, self.pos.y, self.hitbox.x, self.hitbox.y))

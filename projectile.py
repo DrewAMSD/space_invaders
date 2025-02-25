@@ -28,7 +28,7 @@ class Projectile:
     def move(self, dt: int) -> bool:
         self.pos.y = self.pos.y + (self.speed * dt * self.direction)
         if self.pos.y < 0: return False
-        if self.pos.y > constants.SCREEN_SIZE.y - 50: return False
+        if self.pos.y > constants.SCREEN_SIZE.y: return False
         return True
 
     def draw(self, screen: pygame.Surface) -> None:
