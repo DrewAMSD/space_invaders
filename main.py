@@ -1,5 +1,6 @@
 import pygame
 from pygame import Vector2, Surface, Color
+import constants
 from player import *
 from projectile import *
 from alien import *
@@ -7,17 +8,20 @@ from alien import *
 def main() -> None:
     # setup
     pygame.init()
-    screen: Surface = pygame.display.set_mode((1280, 900))
+    screen: Surface = pygame.display.set_mode((constants.SCREEN_SIZE.x, constants.SCREEN_SIZE.y))
     pygame.display.set_caption("Space Invaders")
     clock: pygame.time.Clock = pygame.time.Clock()
     
     # Game variables
     running: bool = True
     dt: float = 0
-    player: Player = Player(screen)
+    wave: int = 1
+    # player state
+    player: Player = Player()
     player_projectiles: list = [None]
-    alien_wave: int = 0
-    aliens: list = generate_new_swarm(alien_wave)
+    # alien swarm state
+    swarm_location: Vector2 = Vector2(40, 40) # northwest (top-left) of swarm location   
+    swarm: list = generate_new_swarm(wave, swarm_location)
 
     # event loop
     while running:
@@ -27,8 +31,8 @@ def main() -> None:
                 running = False
 
         # run game
-        update_physics(screen, dt, player, player_projectiles, aliens)
-        fill_frame(screen, player, player_projectiles, aliens)
+        update_physics(screen, dt, player, player_projectiles, swarm)
+        fill_frame(screen, player, player_projectiles, swarm)
 
         # flip display to put new frame onto screen
         pygame.display.flip()
@@ -40,48 +44,51 @@ def main() -> None:
     # end game
     pygame.quit()
 
-def generate_new_swarm(wave: int) -> list:
+def generate_new_swarm(wave: int, swarm_location: Vector2) -> list:
+    wave -= 1
     swarm: list = []
-    for r in range(5):
+    for r in range(constants.SWARM_ROWS):
         row: list = []
-        for c in range(11):
-            if r == 1:
-                row.append(Alien("Shooter", r, c, wave))
-            elif r == 2 or r == 3:
-                row.append(Alien("Brute", r, c, wave))
+        for c in range(constants.SWARM_COLS):
+            x: int = c * (constants.ALIEN_HITBOX_X + constants.ALIEN_OFFSET_X) + swarm_location.x
+            y: int = r * (constants.ALIEN_HITBOX_Y + constants.ALIEN_OFFSET_Y) + swarm_location.y
+            if r == 0:
+                row.append(Alien("Shooter", x, y, constants.ALIEN_HITBOX_X, constants.ALIEN_HITBOX_Y, wave))
+            elif r == 1 or r == 2:
+                row.append(Alien("Brute", x, y, constants.ALIEN_HITBOX_X, constants.ALIEN_HITBOX_Y, wave))
             else:
-                row.append(Alien("Tank", r, c, wave))
+                row.append(Alien("Tank", x, y, constants.ALIEN_HITBOX_X, constants.ALIEN_HITBOX_Y, wave))
         swarm.append(row)
     return swarm
 
-def update_physics(screen: Surface, dt: float, player: Player, player_projectiles: list, aliens: list) -> None:
+def update_physics(screen: Surface, dt: float, player: Player, player_projectiles: list, swarm: list) -> None:
     # check player input
     keys = pygame.key.get_pressed()
     if keys[pygame.K_LEFT]:
-        player.move(screen, -1, dt) # move left
+        player.move(-1, dt) # move left
     if keys[pygame.K_RIGHT]:
-        player.move(screen, 1, dt) # move right
+        player.move(1, dt) # move right
     if keys[pygame.K_SPACE]:
         player_shoot(screen, player, player_projectiles) # shoot laser
 
     # check for collisions
-    check_collisions(screen, dt, player, player_projectiles, aliens)
+    check_collisions(screen, dt, player, player_projectiles, swarm)
 
-def check_collisions(screen: Surface, dt: float, player: Player, player_projectiles: list, aliens: list) -> None:
-    # remove projectiles if they collide with end of screen/wall
+def check_collisions(screen: Surface, dt: float, player: Player, player_projectiles: list, swarm: list) -> None:
+    # remove player projectile if it collides with end of screen
     if player_projectiles[0] is not None:
-        player_projectile_on_screen: bool = player_projectiles[0].move(screen, dt)
+        player_projectile_on_screen: bool = player_projectiles[0].move(dt)
         if not player_projectile_on_screen:
             player_projectiles[0] = None
     
     # check for collisions between aliens and player projectile
-    for r in range(len(aliens)):
+    for r in range(len(swarm)):
         if player_projectiles[0] is None: break
-        for c in range(len(aliens[r])):
-            if aliens[r][c] is None: 
+        for c in range(len(swarm[r])):
+            if swarm[r][c] is None: 
                 continue
-            if rect_collision(player_projectiles[0].get_pos(), player_projectiles[0].get_hitbox(), aliens[r][c].get_pos(), aliens[r][c].get_hitbox()):
-                aliens[r][c] = None # replace with death animation later
+            if rect_collision(player_projectiles[0].get_pos(), player_projectiles[0].get_hitbox(), swarm[r][c].get_pos(), swarm[r][c].get_hitbox()):
+                swarm[r][c] = None # replace with death animation later
                 player_projectiles[0] = None
                 break
 
@@ -105,21 +112,23 @@ def player_shoot(screen: Surface, player: Player, player_projectiles: list) -> N
     if player_projectiles[0] is not None: 
         return None
     player_pos: Vector2 = player.get_pos()
-    player_projectiles[0] = Projectile("laser", player_pos.x + 30, player_pos.y - 34, -1)
+    player_projectiles[0] = Projectile("laser", -1, player_pos.x + 30, player_pos.y - 34,)
 
-def fill_frame(screen: Surface, player: Player, player_projectiles: list, aliens: list) -> None:
+def fill_frame(screen: Surface, player: Player, player_projectiles: list, swarm: list) -> None:
     # fill background wiping away previous frame
     screen.fill("black")
     # bottom boundary rectangle
     pygame.draw.rect(screen, Color(0, 255, 0), pygame.Rect(68, screen.get_height() - 40, screen.get_width() - 136, 5))
-
     # draw all objects
+    # player
     player.draw(screen)
-    for row in aliens:
+    # aliens
+    for row in swarm:
         for alien in row:
             if alien is None: 
                 continue
             alien.draw(screen)
+    # player projectile
     if player_projectiles[0] is not None:
         player_projectiles[0].draw(screen)
 

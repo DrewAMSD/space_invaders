@@ -1,8 +1,9 @@
 import pygame
 from pygame import Vector2, Surface, Color
+import constants
 
 class Projectile:
-    def __init__(self, projectile_type: str, x: int, y: int, direction_input: int) -> None:
+    def __init__(self, projectile_type: str, direction_input: int, x: int, y: int) -> None:
         self.projectile_type: str = projectile_type
         self.pos: Vector2 = Vector2(x, y)
         self.hitbox: Vector2 = Vector2(10, 10)
@@ -16,7 +17,7 @@ class Projectile:
                 self.hitbox.y = 20
                 self.speed = 700
             case _:
-                print("uh oh!")
+                print("Projectile created without a type")
 
     def get_pos(self) -> Vector2:
         return self.pos
@@ -24,10 +25,10 @@ class Projectile:
     def get_hitbox(self) -> Vector2:
         return self.hitbox
 
-    def move(self, screen: Surface, dt: int) -> bool:
+    def move(self, dt: int) -> bool:
         self.pos.y = self.pos.y + (self.speed * dt * self.direction)
         if self.pos.y < 0: return False
-        if self.pos.y > screen.get_height() - 50: return False
+        if self.pos.y > constants.SCREEN_SIZE.y - 50: return False
         return True
 
     def draw(self, screen: pygame.Surface) -> None:

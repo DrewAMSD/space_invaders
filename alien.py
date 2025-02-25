@@ -1,12 +1,27 @@
 import pygame
 from pygame import Vector2, Surface, Color
+import constants
 
 class Alien:
-    def __init__(self, type_input: str, row: int, col: int, wave: int) -> None:
+    def __init__(self, type_input: str, x: int, y: int, hitbox_x: int, hitbox_y: int, wave: int) -> None:
         self.type = type_input
-        self.hitbox: Vector2 = Vector2(50, 40)
-        self.pos: Vector2 = Vector2(col * (self.hitbox.x + 15) + 40, row * (self.hitbox.y + 22) + 40)
+        self.hitbox: Vector2 = Vector2(hitbox_x, hitbox_y)
+        self.pos: Vector2 = Vector2(x, y)
         self.color: Color = Color(255, 255, 255)
+        # START remove later
+        match self.type:
+            case "Shooter":
+                self.color.g = 0
+                self.color.b = 0
+            case "Brute":
+                self.color.r = 0
+                self.color.b = 0
+            case "Tank":
+                self.color.r = 0
+                self.color.g = 0
+            case _:
+                print("Alien created without a type")
+        # END remove later
 
     def get_pos(self) -> Vector2:
         return self.pos
