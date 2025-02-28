@@ -24,6 +24,7 @@ def main() -> None:
         "location": Vector2((screen.get_width() / 2) - (constants.SWARM_LENGTH / 2), 40), # northwest (top-left) of swarm location
         "timer": constants.SWARM_TIMER, # time until swarm can move in seconds
         "direction": 1,
+        "col_has_aliens": [True for i in range(constants.SWARM_COLS)]
     }
     swarm: list = generate_new_swarm(wave, swarm_data)
 
@@ -85,23 +86,41 @@ def update_physics(screen: Surface, dt: float, player: Player, player_projectile
     check_collisions(screen, dt, player, player_projectiles, swarm)
 
 def move_swarm(swarm: list, swarm_data: dict) -> None:
-    # check if you need to move swarm up or down
-    if swarm_reached_edge(swarm_data):
+    for c in range(constants.SWARM_COLS):
+        swarm_data["col_has_aliens"][c] = has_aliens(swarm, c)
+
+    # check if you need to move swarm vertically or horizontally
+    if swarm_reached_edge(swarm, swarm_data):
+        # move swarm vertically
         swarm_data["direction"] *= -1
         swarm_data["location"].y += constants.SWARM_MOV_Y
     else:
-        # move swarm left or right
+        # move swarm horizontally
         swarm_data["location"].x = swarm_data["location"].x + (constants.SWARM_MOV_X * swarm_data["direction"])
-        if swarm_data["location"].x < constants.SCREEN_BOUND_X:
-            swarm_data["location"].x = constants.SCREEN_BOUND_X
-        elif swarm_data["location"].x + constants.SWARM_LENGTH > constants.SCREEN_SIZE.x - constants.SCREEN_BOUND_X:
-            swarm_data["location"].x = constants.SCREEN_SIZE.x - constants.SCREEN_BOUND_X - constants.SWARM_LENGTH
 
     swarm_data["timer"] = constants.SWARM_TIMER
     update_alien_locations(swarm, swarm_data)
 
-def swarm_reached_edge(swarm_data: dict) -> bool:
-    return (swarm_data["location"].x == constants.SCREEN_BOUND_X and swarm_data["direction"] == -1) or (swarm_data["location"].x + constants.SWARM_LENGTH == constants.SCREEN_SIZE.x - constants.SCREEN_BOUND_X and swarm_data["direction"] == 1)
+def has_aliens(swarm: list, c: int) -> bool:
+    for r in range(constants.SWARM_ROWS):
+        if swarm[r][c] is not None:
+            return True
+    return False
+
+def swarm_reached_edge(swarm: list, swarm_data: dict) -> bool:
+    loc_left: int = swarm_data["location"].x
+    loc_right: int = swarm_data["location"].x + constants.SWARM_LENGTH
+    # update left and right depending on col_has_aliens bool array
+    for c in range(constants.SWARM_COLS):
+        if swarm_data["col_has_aliens"][c]:
+            break
+        loc_left += constants.ALIEN_HITBOX_X + constants. ALIEN_OFFSET_X
+    for c in range(constants.SWARM_COLS - 1, 0, -1):
+        if swarm_data["col_has_aliens"][c]:
+            break
+        loc_right -= (constants.ALIEN_HITBOX_X + constants.ALIEN_OFFSET_X)
+
+    return (loc_left <= constants.SCREEN_BOUND_X and swarm_data["direction"] == -1) or (loc_right >= constants.SCREEN_SIZE.x - constants.SCREEN_BOUND_X and swarm_data["direction"] == 1)
 
 def update_alien_locations(swarm: list, swarm_data: dict) -> None:
     for r in range(constants.SWARM_ROWS):
@@ -121,7 +140,8 @@ def check_collisions(screen: Surface, dt: float, player: Player, player_projecti
     
     # check for collisions between aliens and player projectile
     for r in range(len(swarm)):
-        if player_projectiles[0] is None: break
+        if player_projectiles[0] is None: 
+            break
         for c in range(len(swarm[r])):
             if swarm[r][c] is None: 
                 continue
