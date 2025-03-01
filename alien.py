@@ -33,6 +33,19 @@ class Alien:
         self.pos.x = new_x
         self.pos.y = new_y
 
+    def get_score(self) -> int:
+        alien_score: int = 0
+        match self.type:
+            case "shooter":
+                alien_score = 40
+            case "brute":
+                alien_score = 20
+            case "tank":
+                alien_score = 10
+            case _:
+                print("alien has no score")
+        return alien_score
+
     def draw(self, screen: Surface) -> None:
         pygame.draw.rect(screen, self.color, pygame.Rect(self.pos.x, self.pos.y, self.hitbox.x, self.hitbox.y))
         

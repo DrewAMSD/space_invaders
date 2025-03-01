@@ -4,6 +4,7 @@ import constants
 from player import *
 from projectile import *
 from alien import *
+import Text
 
 def main() -> None:
     # setup
@@ -13,44 +14,47 @@ def main() -> None:
     clock: pygame.time.Clock = pygame.time.Clock()
     
     # Game variables
-    running: bool = True
-    dt: float = 0
-    wave: int = 1
+    game_data: dict = {
+        "running": True,
+        "dt": 0,
+        "wave": 1,
+        "score": 0,
+    }
     # player state
     player: Player = Player()
     player_projectiles: list = [None]
     # alien swarm state
     swarm_data: dict = {
-        "location": Vector2((screen.get_width() / 2) - (constants.SWARM_LENGTH / 2), 40), # northwest (top-left) of swarm location
+        "location": Vector2((screen.get_width() / 2) - (constants.SWARM_LENGTH / 2), 120), # northwest (top-left) of swarm location
         "timer": constants.SWARM_TIMER, # time until swarm can move in seconds
         "direction": 1,
         "col_has_aliens": [True for i in range(constants.SWARM_COLS)]
     }
-    swarm: list = generate_new_swarm(wave, swarm_data)
+    swarm: list = generate_new_swarm(game_data, swarm_data)
 
     # event loop
-    while running:
+    while game_data["running"]:
         # end game if user clicked X to close window 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
+                game_data["running"] = False
 
         # run game
-        update_physics(screen, dt, player, player_projectiles, swarm, swarm_data)
-        fill_frame(screen, player, player_projectiles, swarm)
+        update_physics(screen, game_data, player, player_projectiles, swarm, swarm_data)
+        fill_frame(screen, player, player_projectiles, swarm, game_data)
 
         # flip display to put new frame onto screen
         pygame.display.flip()
 
         # limit FPS to 60
         # keep track of delta time since last frame in seconds for physics calculations
-        dt = clock.tick(60) / 1000
+        game_data["dt"] = clock.tick(60) / 1000
 
     # end game
     pygame.quit()
 
-def generate_new_swarm(wave: int, swarm_data: dict) -> list:
-    wave -= 1
+def generate_new_swarm(game_data: dict, swarm_data: dict) -> list:
+    wave = game_data["wave"] - 1
     swarm: list = []
     for r in range(constants.SWARM_ROWS):
         row: list = []
@@ -68,22 +72,22 @@ def generate_new_swarm(wave: int, swarm_data: dict) -> list:
         swarm.append(row)
     return swarm
 
-def update_physics(screen: Surface, dt: float, player: Player, player_projectiles: list, swarm: list, swarm_data: dict) -> None:
+def update_physics(screen: Surface, game_data: dict, player: Player, player_projectiles: list, swarm: list, swarm_data: dict) -> None:
     # check player input
     keys = pygame.key.get_pressed()
     if keys[pygame.K_LEFT]:
-        player.move(-1, dt) # move left
+        player.move(-1, game_data["dt"]) # move left
     if keys[pygame.K_RIGHT]:
-        player.move(1, dt) # move right
+        player.move(1, game_data["dt"]) # move right
     if keys[pygame.K_SPACE]:
         player_shoot(screen, player, player_projectiles) # shoot laser
     
     # check if enough time has passed for swarm to move
-    swarm_data["timer"] -= dt
+    swarm_data["timer"] -= game_data["dt"]
     if swarm_data["timer"] <= 0:
         move_swarm(swarm, swarm_data)
     # check for collisions
-    check_collisions(screen, dt, player, player_projectiles, swarm)
+    check_collisions(screen, game_data, player, player_projectiles, swarm)
 
 def move_swarm(swarm: list, swarm_data: dict) -> None:
     for c in range(constants.SWARM_COLS):
@@ -131,10 +135,10 @@ def update_alien_locations(swarm: list, swarm_data: dict) -> None:
             y: int = r * (constants.ALIEN_HITBOX_Y + constants.ALIEN_OFFSET_Y) + swarm_data["location"].y
             swarm[r][c].update_pos(x, y)
 
-def check_collisions(screen: Surface, dt: float, player: Player, player_projectiles: list, swarm: list) -> None:
+def check_collisions(screen: Surface, game_data: dict, player: Player, player_projectiles: list, swarm: list) -> None:
     # remove player projectile if it collides with end of screen
     if player_projectiles[0] is not None:
-        player_projectile_on_screen: bool = player_projectiles[0].move(dt)
+        player_projectile_on_screen: bool = player_projectiles[0].move(game_data["dt"])
         if not player_projectile_on_screen:
             player_projectiles[0] = None
     
@@ -146,6 +150,7 @@ def check_collisions(screen: Surface, dt: float, player: Player, player_projecti
             if swarm[r][c] is None: 
                 continue
             if rect_collision(player_projectiles[0].get_pos(), player_projectiles[0].get_hitbox(), swarm[r][c].get_pos(), swarm[r][c].get_hitbox()):
+                game_data["score"] += swarm[r][c].get_score()
                 swarm[r][c] = None # replace with death animation later
                 player_projectiles[0] = None
                 break
@@ -167,12 +172,12 @@ def rect_collision(obj1_pos: Vector2, obj1_hitbox: Vector2, obj2_pos: Vector2, o
     return w1 < e2 and w2 < e1 and n1 < s2 and n2 < s1
 
 def player_shoot(screen: Surface, player: Player, player_projectiles: list) -> None:
-    if player_projectiles[0] is not None: 
+    if player_projectiles[0] is not None:
         return None
     player_pos: Vector2 = player.get_pos()
     player_projectiles[0] = Projectile("laser", -1, player_pos.x + 30, player_pos.y - 34,)
 
-def fill_frame(screen: Surface, player: Player, player_projectiles: list, swarm: list) -> None:
+def fill_frame(screen: Surface, player: Player, player_projectiles: list, swarm: list, game_data: dict) -> None:
     # fill background wiping away previous frame
     screen.fill("black")
     # bottom boundary rectangle
@@ -189,6 +194,9 @@ def fill_frame(screen: Surface, player: Player, player_projectiles: list, swarm:
     # player projectile
     if player_projectiles[0] is not None:
         player_projectiles[0].draw(screen)
+    # draw text
+    Text.text_to_screen(screen, "score", 0, 0, 30, (255, 255, 255))
+    Text.text_to_screen(screen, game_data["score"], 90, 0, 30, (0, 255, 0))
 
 if __name__ == "__main__":
     main()
