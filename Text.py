@@ -1,6 +1,6 @@
 import pygame
 
-def text_to_screen(screen, text, x, y, size, color, font_type = 'MachineRegular.ttf'):
+def text_to_screen(screen, text, x, y, size, color, font_type = 'MachineRegular.ttf') -> None:
     try:
 
         text = str(text)
