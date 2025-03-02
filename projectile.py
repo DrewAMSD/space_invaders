@@ -17,7 +17,7 @@ class Projectile:
                 self.hitbox.y = 20
                 self.speed = 700
             case "cross":
-                self.hitbox.x = 4
+                self.hitbox.x = 3
                 self.hitbox.y = 25
                 self.speed = 200
             case _:
@@ -33,7 +33,7 @@ class Projectile:
         self.pos.y = self.pos.y + (self.speed * dt * self.direction)
 
     def off_screen(self):
-        return self.pos.y < 0 or self.pos.y > constants.SCREEN_SIZE.y
+        return self.pos.y < 0 or self.pos.y + self.hitbox.y > constants.SCREEN_SIZE.y - 20
 
     def draw(self, screen: pygame.Surface) -> None:
         match self.projectile_type:

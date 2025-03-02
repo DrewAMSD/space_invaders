@@ -239,7 +239,7 @@ def fill_frame(screen: Surface, player: Player, player_projectiles: list, swarm:
     # fill background wiping away previous frame
     screen.fill("black")
     # bottom boundary rectangle
-    pygame.draw.rect(screen, Color(0, 255, 0), pygame.Rect(68, constants.SCREEN_SIZE.y - 40, constants.SCREEN_SIZE.x - 136, 5))
+    pygame.draw.rect(screen, Color(0, 255, 0), pygame.Rect(68, constants.SCREEN_SIZE.y - 20, constants.SCREEN_SIZE.x - 136, 5))
     # draw text
     Text.text_to_screen(screen, "Score", 0, 0, 30, (255, 255, 255))
     Text.text_to_screen(screen, game_data["score"], 90, 0, 30, (0, 255, 0))
