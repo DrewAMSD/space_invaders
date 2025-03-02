@@ -9,6 +9,7 @@ ALIEN_HITBOX_X: int = 50
 ALIEN_HITBOX_Y: int = 40
 ALIEN_OFFSET_X: int = 15
 ALIEN_OFFSET_Y: int = 22
+ALIEN_MAX_PROJECTILES: int = 10
 # swarm constants
 SWARM_ROWS: int = 5
 SWARM_COLS: int = 11

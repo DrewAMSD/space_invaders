@@ -16,6 +16,10 @@ class Projectile:
                 self.hitbox.x = 4
                 self.hitbox.y = 20
                 self.speed = 700
+            case "cross":
+                self.hitbox.x = 4
+                self.hitbox.y = 25
+                self.speed = 200
             case _:
                 print("Projectile created without a type")
 
@@ -25,11 +29,18 @@ class Projectile:
     def get_hitbox(self) -> Vector2:
         return self.hitbox
 
-    def move(self, dt: int) -> bool:
+    def move(self, dt: int) -> None:
         self.pos.y = self.pos.y + (self.speed * dt * self.direction)
-        if self.pos.y < 0: return False
-        if self.pos.y > constants.SCREEN_SIZE.y: return False
-        return True
+
+    def off_screen(self):
+        return self.pos.y < 0 or self.pos.y > constants.SCREEN_SIZE.y
 
     def draw(self, screen: pygame.Surface) -> None:
-        pygame.draw.rect(screen, self.color, pygame.Rect(self.pos.x, self.pos.y, self.hitbox.x, self.hitbox.y))
+        match self.projectile_type:
+            case "laser":
+                pygame.draw.rect(screen, self.color, pygame.Rect(self.pos.x, self.pos.y, self.hitbox.x, self.hitbox.y))
+            case "cross":
+                pygame.draw.rect(screen, self.color, pygame.Rect(self.pos.x, self.pos.y, self.hitbox.x, self.hitbox.y))
+                pygame.draw.rect(screen, self.color, pygame.Rect(self.pos.x - self.hitbox.x * 2, self.pos.y + 8, self.hitbox.x * 5, 3))
+            case _:
+                print("Projectile created without a type")

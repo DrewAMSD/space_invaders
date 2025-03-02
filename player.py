@@ -19,6 +19,12 @@ class Player:
     def get_lives(self) -> int:
         return self.lives
 
+    def kill(self) -> None:
+        self.lives -= 1
+
+    def is_dead(self) -> bool:
+        return self.lives == 0
+
     def move(self, direction: int, dt: float) -> None:
         # update player position
         self.pos.x = self.pos.x + (self.speed * dt * direction)
