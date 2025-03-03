@@ -20,7 +20,7 @@ def main() -> None:
     player: Player = Player()
     player_projectiles: list = [None]
     # alien swarm state
-    swarm_data: dict = new_swarm_data()
+    swarm_data: dict = new_swarm_data(game_data)
     swarm: list = generate_new_swarm(game_data, swarm_data)
     alien_projectiles: list = []
 
@@ -35,11 +35,16 @@ def main() -> None:
                 game_data = new_game_data()
                 player = Player()
                 player_projectiles = [None]
-                swarm_data = new_swarm_data()
+                swarm_data = new_swarm_data(game_data)
                 swarm = generate_new_swarm(game_data, swarm_data)
                 alien_projectiles = []
 
         # run game
+        if swarm_empty(swarm_data):
+            game_data["wave"] += 1
+            swarm_data = new_swarm_data(game_data)
+            swarm = generate_new_swarm(game_data, swarm_data)
+            player.increment_lives()
         if not game_data["game_over"]:
             update_physics(screen, game_data, player, player_projectiles, swarm, swarm_data, alien_projectiles)
         fill_frame(screen, player, player_projectiles, swarm, game_data, alien_projectiles)
@@ -63,12 +68,22 @@ def new_game_data() -> dict:
         "score": 0,
     }
 
-def new_swarm_data() -> dict:
+def new_swarm_data(game_data: dict) -> dict:
+    wave: int = game_data["wave"]
+    # swarm data variables
+    location: Vector2 = Vector2((constants.SCREEN_SIZE.x / 2) - (constants.SWARM_LENGTH / 2), 120)
+    location.y += (constants.SWARM_MOV_Y) * min(wave-1, 4)
+    timer: int = constants.SWARM_TIMER - (0.05 * (7 if wave-1 > 7 else wave-1))
+    direction: int = 1
+    col_has_aliens: list = [True for c in range(constants.SWARM_COLS)]
+    row_has_aliens: list = [True for r in range(constants.SWARM_ROWS)]
     return {
-        "location": Vector2((constants.SCREEN_SIZE.x / 2) - (constants.SWARM_LENGTH / 2), 120), # northwest (top-left) of swarm location
-        "timer": constants.SWARM_TIMER, # time until swarm can move in seconds
-        "direction": 1,
-        "col_has_aliens": [True for i in range(constants.SWARM_COLS)]
+        "location": location, # northwest (top-left) of swarm location
+        "max_timer": timer,
+        "timer": timer, # time until swarm can move in seconds
+        "direction": direction,
+        "col_has_aliens": col_has_aliens,
+        "row_has_aliens": row_has_aliens,
     }
 
 def generate_new_swarm(game_data: dict, swarm_data: dict) -> list:
@@ -89,6 +104,12 @@ def generate_new_swarm(game_data: dict, swarm_data: dict) -> list:
             row.append(Alien(alien_type, x, y, constants.ALIEN_HITBOX_X, constants.ALIEN_HITBOX_Y, wave))
         swarm.append(row)
     return swarm
+
+def swarm_empty(swarm_data: dict) -> bool:
+    for c in range(constants.SWARM_COLS):
+        if swarm_data["col_has_aliens"][c]:
+            return False
+    return True
 
 def update_physics(screen: Surface, game_data: dict, player: Player, player_projectiles: list, swarm: list, swarm_data: dict, alien_projectiles: list) -> None:
     # check player input
@@ -115,18 +136,15 @@ def update_physics(screen: Surface, game_data: dict, player: Player, player_proj
         if random_int <= get_chance_to_shoot(len(alien_projectiles)):
             alien_shoot(screen, swarm[0][c], alien_projectiles)
     # check for collisions
-    check_collisions(screen, game_data, player, player_projectiles, swarm, alien_projectiles)
+    check_collisions(screen, game_data, player, player_projectiles, swarm, swarm_data, alien_projectiles)
     # check if game is over
-    if player.is_dead():
+    if player.is_dead() or swarm_reached_player(swarm_data):
         game_data["game_over"] = True
 
-def get_chance_to_shoot(n: int):
+def get_chance_to_shoot(n: int) -> int:
     return constants.SWARM_COLS - n + 5
 
 def move_swarm(swarm: list, swarm_data: dict) -> None:
-    for c in range(constants.SWARM_COLS):
-        swarm_data["col_has_aliens"][c] = has_aliens(swarm, c)
-
     # check if you need to move swarm vertically or horizontally
     if swarm_reached_edge(swarm, swarm_data):
         # move swarm vertically
@@ -136,7 +154,7 @@ def move_swarm(swarm: list, swarm_data: dict) -> None:
         # move swarm horizontally
         swarm_data["location"].x = swarm_data["location"].x + (constants.SWARM_MOV_X * swarm_data["direction"])
 
-    swarm_data["timer"] = constants.SWARM_TIMER
+    swarm_data["timer"] = swarm_data["max_timer"]
     update_alien_locations(swarm, swarm_data)
 
 def move_alien_projectiles(alien_projectiles: list, game_data: dict) -> None:
@@ -147,12 +165,6 @@ def move_player_projectile(player_projectiles: list, game_data: dict) -> None:
     if player_projectiles[0] is not None:
         player_projectiles[0].move(game_data["dt"])
 
-def has_aliens(swarm: list, c: int) -> bool:
-    for r in range(constants.SWARM_ROWS):
-        if swarm[r][c] is not None:
-            return True
-    return False
-
 def swarm_reached_edge(swarm: list, swarm_data: dict) -> bool:
     loc_left: int = swarm_data["location"].x
     loc_right: int = swarm_data["location"].x + constants.SWARM_LENGTH
@@ -160,13 +172,21 @@ def swarm_reached_edge(swarm: list, swarm_data: dict) -> bool:
     for c in range(constants.SWARM_COLS):
         if swarm_data["col_has_aliens"][c]:
             break
-        loc_left += constants.ALIEN_HITBOX_X + constants. ALIEN_OFFSET_X
+        loc_left += constants.ALIEN_HITBOX_X + constants.ALIEN_OFFSET_X
     for c in range(constants.SWARM_COLS - 1, 0, -1):
         if swarm_data["col_has_aliens"][c]:
             break
         loc_right -= (constants.ALIEN_HITBOX_X + constants.ALIEN_OFFSET_X)
 
     return (loc_left <= constants.SCREEN_BOUND_X and swarm_data["direction"] == -1) or (loc_right >= constants.SCREEN_SIZE.x - constants.SCREEN_BOUND_X and swarm_data["direction"] == 1)
+
+def swarm_reached_player(swarm_data: dict) -> bool:
+    loc_bot: int = swarm_data["location"].y + constants.SWARM_HEIGHT
+    for r in range(constants.SWARM_ROWS - 1, 0, -1):
+        if swarm_data["row_has_aliens"][r]:
+            break
+        loc_bot -= (constants.ALIEN_HITBOX_Y + constants.ALIEN_OFFSET_Y)
+    return loc_bot >= constants.SCREEN_SIZE.y - 200
 
 def update_alien_locations(swarm: list, swarm_data: dict) -> None:
     for r in range(constants.SWARM_ROWS):
@@ -177,7 +197,7 @@ def update_alien_locations(swarm: list, swarm_data: dict) -> None:
             y: int = r * (constants.ALIEN_HITBOX_Y + constants.ALIEN_OFFSET_Y) + swarm_data["location"].y
             swarm[r][c].update_pos(x, y)
 
-def check_collisions(screen: Surface, game_data: dict, player: Player, player_projectiles: list, swarm: list, alien_projectiles: list) -> None:
+def check_collisions(screen: Surface, game_data: dict, player: Player, player_projectiles: list, swarm: list, swarm_data: dict, alien_projectiles: list) -> None:
     # remove player projectile if it collides with end of screen
     if player_projectiles[0] is not None and player_projectiles[0].off_screen():
         player_projectiles[0] = None
@@ -204,7 +224,21 @@ def check_collisions(screen: Surface, game_data: dict, player: Player, player_pr
                 game_data["score"] += swarm[r][c].get_score()
                 swarm[r][c] = None # replace with death animation later
                 player_projectiles[0] = None
+                swarm_data["col_has_aliens"][c] = col_has_aliens(swarm, c)
+                swarm_data["row_has_aliens"][r] = row_has_aliens(swarm, r)
                 break
+
+def col_has_aliens(swarm: list, c: int) -> bool:
+    for r in range(constants.SWARM_ROWS):
+        if swarm[r][c] is not None:
+            return True
+    return False
+
+def row_has_aliens(swarm: list, r: int) -> bool:
+    for c in range(constants.SWARM_COLS):
+        if swarm[r][c] is not None:
+            return True
+    return False
 
 def rect_collision(obj1_pos: Vector2, obj1_hitbox: Vector2, obj2_pos: Vector2, obj2_hitbox: Vector2) -> bool:
     # n = north, e = east, s = south, w = west
@@ -274,7 +308,7 @@ def fill_frame(screen: Surface, player: Player, player_projectiles: list, swarm:
     for i in range(len(alien_projectiles)):
         alien_projectiles[i].draw(screen)
 
-def mouse_over_play_again():
+def mouse_over_play_again() -> bool:
     mouse_pos_x, mouse_pos_y = pygame.mouse.get_pos()
     return mouse_pos_x >= 562 and mouse_pos_x <= 780 and mouse_pos_y >= 462 and mouse_pos_y <= 496
 

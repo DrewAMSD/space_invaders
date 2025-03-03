@@ -19,6 +19,9 @@ class Player:
     def get_lives(self) -> int:
         return self.lives
 
+    def increment_lives(self) -> None:
+        self.lives += 1
+
     def kill(self) -> None:
         self.lives -= 1
         self.pos.x = constants.SCREEN_SIZE.x / 4
