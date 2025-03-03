@@ -30,7 +30,7 @@ def main() -> None:
         for event in pygame.event.get():
             if event.type == pygame.QUIT: # end game if user clicked X to close window
                 game_data["running"] = False
-            if event.type == pygame.MOUSEBUTTONDOWN and game_data["game_over"] and mouse_over_play_again():
+            if event.type == pygame.MOUSEBUTTONDOWN and game_data["game_over"] and mouse_over_play_again(): # user clicked on play again
                 # reset state
                 game_data = new_game_data()
                 player = Player()

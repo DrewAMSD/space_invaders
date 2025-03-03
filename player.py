@@ -4,7 +4,7 @@ import constants
 
 class Player:
     def __init__(self) -> None:
-        self.pos: Vector2 = Vector2((constants.SCREEN_SIZE.x / 2) - 32, constants.SCREEN_SIZE.y - 100)
+        self.pos: Vector2 = Vector2(constants.SCREEN_SIZE.x / 4, constants.SCREEN_SIZE.y - 100)
         self.hitbox: Vector2 = Vector2(64, 20) # 32 pixels left and right from self.pos.x, and 20 pixels down from self.pos.y
         self.speed: int = 300 # pixels per second
         self.color: Color = Color(0, 255, 0)
@@ -21,6 +21,7 @@ class Player:
 
     def kill(self) -> None:
         self.lives -= 1
+        self.pos.x = constants.SCREEN_SIZE.x / 4
 
     def is_dead(self) -> bool:
         return self.lives == 0
