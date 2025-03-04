@@ -40,15 +40,20 @@ def main() -> None:
                 alien_projectiles = []
 
         # run game
-        if swarm_empty(swarm_data):
+        if swarm_empty(swarm_data): # player cleared swarm/wave
             game_data["wave"] += 1
             swarm_data = new_swarm_data(game_data)
             swarm = generate_new_swarm(game_data, swarm_data)
             player.increment_lives()
         if not game_data["game_over"]:
             update_physics(screen, game_data, player, player_projectiles, swarm, swarm_data, alien_projectiles)
-        fill_frame(screen, player, player_projectiles, swarm, game_data, alien_projectiles)
+        
+        # check if game is over
+        if player.is_dead() or swarm_reached_player(swarm_data):
+            game_data["game_over"] = True
 
+        # fill display frame
+        fill_frame(screen, player, player_projectiles, swarm, game_data, alien_projectiles)
         # flip display to put new frame onto screen
         pygame.display.flip()
 
@@ -137,9 +142,6 @@ def update_physics(screen: Surface, game_data: dict, player: Player, player_proj
             alien_shoot(screen, swarm[0][c], alien_projectiles)
     # check for collisions
     check_collisions(screen, game_data, player, player_projectiles, swarm, swarm_data, alien_projectiles)
-    # check if game is over
-    if player.is_dead() or swarm_reached_player(swarm_data):
-        game_data["game_over"] = True
 
 def get_chance_to_shoot(n: int) -> int:
     return constants.SWARM_COLS - n + 5
