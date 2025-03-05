@@ -8,7 +8,7 @@ class Alien:
         self.hitbox: Vector2 = Vector2(hitbox_x, hitbox_y)
         self.pos: Vector2 = Vector2(x, y)
         self.color: Color = Color(255, 255, 255)
-        self.sprites: list = get_sprites(f"alien_sprites/{self.type}", self.hitbox) # replace with self.type
+        self.sprites: list = get_sprites(f"alien_sprites/{self.type}", self.hitbox)
 
     def get_pos(self) -> Vector2:
         return self.pos
