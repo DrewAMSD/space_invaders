@@ -53,12 +53,13 @@ def main() -> None:
             game_data["game_over"] = True
 
         # fill display frame
-        fill_frame(screen, player, player_projectiles, swarm, game_data, alien_projectiles)
+        fill_frame(screen, player, player_projectiles, swarm, game_data, alien_projectiles, swarm_data)
         # flip display to put new frame onto screen
         pygame.display.flip()
 
         # limit FPS to 60
         # keep track of delta time since last frame in seconds for physics calculations
+        game_data["tic"] += 1
         game_data["dt"] = clock.tick(60) / 1000
 
     # end game
@@ -71,6 +72,7 @@ def new_game_data() -> dict:
         "dt": 0,
         "wave": 1,
         "score": 0,
+        "tic": 0,
     }
 
 def new_swarm_data(game_data: dict) -> dict:
@@ -89,6 +91,7 @@ def new_swarm_data(game_data: dict) -> dict:
         "direction": direction,
         "col_has_aliens": col_has_aliens,
         "row_has_aliens": row_has_aliens,
+        "tic": 0,
     }
 
 def generate_new_swarm(game_data: dict, swarm_data: dict) -> list:
@@ -157,6 +160,7 @@ def move_swarm(swarm: list, swarm_data: dict) -> None:
         swarm_data["location"].x = swarm_data["location"].x + (constants.SWARM_MOV_X * swarm_data["direction"])
 
     swarm_data["timer"] = swarm_data["max_timer"]
+    swarm_data["tic"] += 1
     update_alien_locations(swarm, swarm_data)
 
 def move_alien_projectiles(alien_projectiles: list, game_data: dict) -> None:
@@ -271,7 +275,7 @@ def alien_shoot(screen: Surface, alien: Alien, alien_projectiles: list) -> None:
     alien_hitbox: Vector2 = alien.get_hitbox()
     alien_projectiles.append(Projectile("cross", 1, alien_pos.x + alien_hitbox.x / 2 - 2, alien_pos.y + alien_hitbox.y / 2))
 
-def fill_frame(screen: Surface, player: Player, player_projectiles: list, swarm: list, game_data: dict, alien_projectiles: list) -> None:
+def fill_frame(screen: Surface, player: Player, player_projectiles: list, swarm: list, game_data: dict, alien_projectiles: list, swarm_data: dict) -> None:
     # fill background wiping away previous frame
     screen.fill("black")
     # bottom boundary rectangle
@@ -302,7 +306,7 @@ def fill_frame(screen: Surface, player: Player, player_projectiles: list, swarm:
         for alien in row:
             if alien is None: 
                 continue
-            alien.draw(screen)
+            alien.draw(screen, swarm_data["tic"])
     # player projectile
     if player_projectiles[0] is not None:
         player_projectiles[0].draw(screen)
