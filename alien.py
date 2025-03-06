@@ -8,7 +8,7 @@ class Alien:
         self.hitbox: Vector2 = Vector2(hitbox_x, hitbox_y)
         self.pos: Vector2 = Vector2(x, y)
         self.color: Color = Color(255, 255, 255)
-        self.sprites: list = get_sprites(f"alien_sprites/{self.type}", self.hitbox)
+        self.images: list = get_alien_images(f"alien_images/{self.type}", self.hitbox)
 
     def get_pos(self) -> Vector2:
         return self.pos
@@ -34,15 +34,15 @@ class Alien:
         return alien_score
 
     def draw(self, screen: Surface, swarm_tic: int) -> None:
-        screen.blit(self.sprites[swarm_tic % 2], (self.pos.x, self.pos.y))
+        screen.blit(self.images[swarm_tic % 2], (self.pos.x, self.pos.y))
         
-def get_sprites(file_path: str, hitbox: Vector2) -> list:
-    sprites: list = []
+def get_alien_images(file_path: str, hitbox: Vector2) -> list:
+    images: list = []
     for i in range(1, 3):
         total_file_path: str = file_path+str(i)+".png"
-        sprite: Surface = pygame.image.load(total_file_path)
-        sprite = pygame.transform.scale(sprite, (hitbox.x, hitbox.y))
-        sprite.convert_alpha()
-        sprites.append(sprite)
-    return sprites
+        image: Surface = pygame.image.load(total_file_path)
+        image = pygame.transform.scale(image, (hitbox.x, hitbox.y))
+        image.convert_alpha()
+        images.append(image)
+    return images
 
