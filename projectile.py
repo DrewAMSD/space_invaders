@@ -30,7 +30,7 @@ class Projectile:
     def get_hitbox(self) -> Vector2:
         return self.hitbox
 
-    def move(self, dt: int) -> None:
+    def move(self, dt: float) -> None:
         self.pos.y = self.pos.y + (self.speed * dt * self.direction)
         self.tic += 1
 

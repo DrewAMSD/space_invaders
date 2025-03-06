@@ -40,7 +40,7 @@ def main() -> None:
                 alien_projectiles = []
 
         # run game
-        if swarm_empty(swarm_data): # player cleared swarm/wave
+        if swarm_empty(swarm): # player cleared swarm/wave
             game_data["wave"] += 1
             swarm_data = new_swarm_data(game_data)
             swarm = generate_new_swarm(game_data, swarm_data)
@@ -113,13 +113,17 @@ def generate_new_swarm(game_data: dict, swarm_data: dict) -> list:
         swarm.append(row)
     return swarm
 
-def swarm_empty(swarm_data: dict) -> bool:
-    for c in range(constants.SWARM_COLS):
-        if swarm_data["col_has_aliens"][c]:
-            return False
+def swarm_empty(swarm: list) -> bool:
+    for r in range(constants.SWARM_ROWS):
+        for c in range(constants.SWARM_COLS):
+            if swarm[r][c] is not None:
+                return False
     return True
 
 def update_physics(screen: Surface, game_data: dict, player: Player, player_projectiles: list, swarm: list, swarm_data: dict, alien_projectiles: list) -> None:
+    # remove dead aliens who have finished death animation
+    remove_dead_aliens(game_data, swarm, swarm_data)
+    
     # check player input
     keys = pygame.key.get_pressed()
     if keys[pygame.K_LEFT]:
@@ -145,6 +149,16 @@ def update_physics(screen: Surface, game_data: dict, player: Player, player_proj
             alien_shoot(screen, swarm[0][c], alien_projectiles)
     # check for collisions
     check_collisions(screen, game_data, player, player_projectiles, swarm, swarm_data, alien_projectiles)
+
+def remove_dead_aliens(game_data: dict, swarm: list, swarm_data: dict) -> None:
+    for r in range(constants.SWARM_ROWS):
+        for c in range(constants.SWARM_COLS):
+            if swarm[r][c] is None:
+                continue
+            if not swarm[r][c].has_died(): # continue if alien is not playing dead and playing death animation
+                continue
+            if swarm[r][c].death_animation_over(game_data["dt"]):
+                swarm[r][c] = None
 
 def get_chance_to_shoot(n: int) -> int:
     return constants.SWARM_COLS - n + 5
@@ -199,6 +213,8 @@ def update_alien_locations(swarm: list, swarm_data: dict) -> None:
         for c in range(constants.SWARM_COLS):
             if swarm[r][c] is None:
                 continue
+            if swarm[r][c].has_died():
+                continue
             x: int = c * (constants.ALIEN_HITBOX_X + constants.ALIEN_OFFSET_X) + swarm_data["location"].x
             y: int = r * (constants.ALIEN_HITBOX_Y + constants.ALIEN_OFFSET_Y) + swarm_data["location"].y
             swarm[r][c].update_pos(x, y)
@@ -226,9 +242,11 @@ def check_collisions(screen: Surface, game_data: dict, player: Player, player_pr
         for c in range(len(swarm[r])):
             if swarm[r][c] is None: 
                 continue
+            if swarm[r][c].has_died():
+                continue
             if rect_collision(player_projectiles[0].get_pos(), player_projectiles[0].get_hitbox(), swarm[r][c].get_pos(), swarm[r][c].get_hitbox()):
                 game_data["score"] += swarm[r][c].get_score()
-                swarm[r][c] = None # replace with death animation later
+                swarm[r][c].kill() # queue to draw death animation
                 player_projectiles[0] = None
                 swarm_data["col_has_aliens"][c] = col_has_aliens(swarm, c)
                 swarm_data["row_has_aliens"][r] = row_has_aliens(swarm, r)
@@ -237,12 +255,16 @@ def check_collisions(screen: Surface, game_data: dict, player: Player, player_pr
 def col_has_aliens(swarm: list, c: int) -> bool:
     for r in range(constants.SWARM_ROWS):
         if swarm[r][c] is not None:
+            if swarm[r][c].has_died():
+                continue
             return True
     return False
 
 def row_has_aliens(swarm: list, r: int) -> bool:
     for c in range(constants.SWARM_COLS):
         if swarm[r][c] is not None:
+            if swarm[r][c].has_died():
+                continue
             return True
     return False
 
