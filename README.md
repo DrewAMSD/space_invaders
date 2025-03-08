@@ -1,8 +1,8 @@
 # Space Invaders
 An implementation of the classic 2D arcade game space invaders using pygame
 
-## Running The Project
-Head to your bash and insert the following commands:
+## Running The Game
+Head to a bash shell and insert the following commands:
 ```bash
 # clone the repository from github
 git clone https://github.com/DrewAMSD/space_invaders.git
@@ -14,4 +14,15 @@ cd space_invaders
 python3 main.py
 ```
 
-Note: In order to ensure the game runs, make sure python version 3.12+ is installed. 
+Note: In order to ensure the game runs, make sure pygame and python version 3.12+ are installed
+```bash
+# downloads for python vary by operating system
+# check python version
+python3 --version
+
+# check pip version
+pip --version
+
+# after downloading python you can install pygame with pip, the python package manager
+pip install pygame
+```
