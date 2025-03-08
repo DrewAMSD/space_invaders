@@ -20,7 +20,11 @@ class Projectile:
             case "cross":
                 self.hitbox.x = 3
                 self.hitbox.y = 18
-                self.speed = 300
+                self.speed = 350
+            case "wiggle":
+                self.hitbox.x = 12
+                self.hitbox.y = 20
+                self.speed = 450
             case _:
                 print("Projectile created without a type")
 
@@ -49,5 +53,16 @@ class Projectile:
                 if int(self.tic / 10) % 2 == 1:
                     offset = 10 - offset
                 pygame.draw.rect(screen, self.color, pygame.Rect(self.pos.x - self.hitbox.x * 1.5, self.pos.y + 3 + offset , self.hitbox.x * 4.5, 3))
+            case "wiggle":
+                mod: int = 20
+                left: bool = (self.tic % mod) < (mod / 2)
+                x_pos: list = []
+                if left:
+                    x_pos = [4, 0, 4, 8, 4]
+                else:
+                    x_pos = [4, 8, 4, 0, 4]
+                for i in range(5):
+                    h: int = i * 4
+                    pygame.draw.rect(screen, self.color, pygame.Rect(self.pos.x + x_pos[i], self.pos.y + h, 4, 4))
             case _:
                 print("Projectile created without a type")
