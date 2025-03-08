@@ -49,7 +49,7 @@ def main() -> None:
             update_physics(screen, game_data, player, player_projectiles, swarm, swarm_data, alien_projectiles)
         
         # check if game is over
-        if player.is_dead() or swarm_reached_player(swarm_data):
+        if player.lost_all_lives() or swarm_reached_player(swarm_data):
             game_data["game_over"] = True
 
         # fill display frame
@@ -123,6 +123,10 @@ def swarm_empty(swarm: list) -> bool:
 def update_physics(screen: Surface, game_data: dict, player: Player, player_projectiles: list, swarm: list, swarm_data: dict, alien_projectiles: list) -> None:
     # remove dead aliens who have finished death animation
     remove_dead_aliens(game_data, swarm, swarm_data)
+    
+    # if player is in death animation pause all physics updates exluding removing aliens that have finished death animation(line above)
+    if player.get_death_animation() != 0:
+        return None
     
     # check player input
     keys = pygame.key.get_pressed()
@@ -319,10 +323,11 @@ def fill_frame(screen: Surface, player: Player, player_projectiles: list, swarm:
         else:
             play_again_color = Color(255, 255, 255)
         Text.text_to_screen(screen, "Play Again?", constants.SCREEN_SIZE.x / 2 - 80, constants.SCREEN_SIZE.y / 2, 40, play_again_color)
+        player.draw(screen, game_data["dt"])
         return None
     # draw all objects
     # player
-    player.draw(screen)
+    player.draw(screen, game_data["dt"])
     # aliens
     for row in swarm:
         for alien in row:

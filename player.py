@@ -9,6 +9,9 @@ class Player:
         self.speed: int = 300 # pixels per second
         self.color: Color = Color(0, 255, 0)
         self.lives: int = 3
+        self.images: list = get_player_images(self.hitbox)
+        self.death_animation: int = 0 # frame of death animation, 0 means not playing death animation
+        self.death_animation_timer: float = 0.05
 
     def get_pos(self) -> Vector2:
         return self.pos
@@ -24,9 +27,13 @@ class Player:
 
     def kill(self) -> None:
         self.lives -= 1
-        self.pos.x = constants.SCREEN_SIZE.x / 4
+        self.death_animation = 1
+        #self.pos.x = constants.SCREEN_SIZE.x / 4
 
-    def is_dead(self) -> bool:
+    def get_death_animation(self) -> int:
+        return self.death_animation
+
+    def lost_all_lives(self) -> bool:
         return self.lives == 0
 
     def move(self, direction: int, dt: float) -> None:
@@ -39,10 +46,32 @@ class Player:
         if self.pos.x > (constants.SCREEN_SIZE.x - constants.SCREEN_BOUND_X - self.hitbox.x): 
             self.pos.x = constants.SCREEN_SIZE.x - constants.SCREEN_BOUND_X - self.hitbox.x
 
-    def draw(self, screen: Surface) -> None:
-        # base (hitbox region)
-        pygame.draw.rect(screen, self.color, pygame.Rect(self.pos.x + 4, self.pos.y, self.hitbox.x - 8, self.hitbox.y))
-        pygame.draw.rect(screen, self.color, pygame.Rect(self.pos.x, self.pos.y + 5, self.hitbox.x, self.hitbox.y - 5))
-        # barrel
-        pygame.draw.rect(screen, self.color, pygame.Rect(self.pos.x + 27, self.pos.y - 10, 10, 10))
-        pygame.draw.rect(screen, self.color, pygame.Rect(self.pos.x + 30, self.pos.y - 14, 4, 4))
+    def draw(self, screen: Surface, dt: float) -> None:
+        if self.death_animation == 0:
+            if self.lost_all_lives():
+                screen.blit(self.images[len(self.images)-1], (self.pos.x, self.pos.y - 14))
+            else:
+                screen.blit(self.images[0], (self.pos.x, self.pos.y - 14))
+        else:
+            idx: int = ((self.death_animation - 1) % 5) + 1
+            screen.blit(self.images[idx], (self.pos.x, self.pos.y - 14))
+            self.death_animation_timer -= dt
+            if self.death_animation_timer > 0:
+                return None
+            self.death_animation += 1
+            self.death_animation_timer = 0.05
+            if self.death_animation > 9:
+                self.death_animation = 0
+                if not self.lost_all_lives():
+                    self.pos.x = constants.SCREEN_SIZE.x / 4
+
+def get_player_images(hitbox: Vector2) -> list:
+    file_path: str = "player_images/player"
+    images: list = []
+    # insert player image
+    for i in range(6):
+        image: Surface = pygame.image.load(f"{file_path}{i+1}.png")
+        image = pygame.transform.scale(image, (hitbox.x, hitbox.y+14))
+        image.convert_alpha()
+        images.append(image)
+    return images
