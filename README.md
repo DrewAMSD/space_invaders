@@ -1,5 +1,5 @@
 # Space Invaders
-An implementation of space invaders using pygame
+An implementation of the classic 2D arcade game space invaders using pygame
 
 ## Running The Project
 Head to your bash and insert the following commands:
