@@ -2,8 +2,9 @@ import pygame
 from pygame import Vector2, Surface, Color
 import constants
 
-class Alien:
+class Alien(pygame.sprite.Sprite):
     def __init__(self, type_input: str, x: int, y: int, hitbox_x: int, hitbox_y: int, wave: int) -> None:
+        super().__init__()
         self.type = type_input
         self.hitbox: Vector2 = Vector2(hitbox_x, hitbox_y)
         self.pos: Vector2 = Vector2(x, y)

@@ -2,8 +2,9 @@ import pygame
 from pygame import Vector2, Surface, Color
 import constants
 
-class Player:
+class Player(pygame.sprite.Sprite):
     def __init__(self) -> None:
+        super().__init__()
         self.pos: Vector2 = Vector2(constants.SCREEN_SIZE.x / 4, constants.SCREEN_SIZE.y - 100)
         self.hitbox: Vector2 = Vector2(64, 20) # 32 pixels left and right from self.pos.x, and 20 pixels down from self.pos.y
         self.speed: int = 300 # pixels per second

@@ -14,8 +14,27 @@ def main() -> None:
     pygame.display.set_caption("Space Invaders")
     clock: pygame.time.Clock = pygame.time.Clock()
     
+    # loading screen images
+    LOADING_SCREEN_IMAGES: list = []
+    img1: Surface = pygame.image.load("alien_images/tank1.png")
+    img2: Surface = pygame.image.load("alien_images/brute1.png")
+    img3: Surface = pygame.image.load("alien_images/shooter1.png")
+    img4: Surface = pygame.image.load("alien_images/spaceship.png")
+    imgs: list = [img1, img2, img3, img4]
+    for i, image in enumerate(imgs):
+        if i == 3:
+            image = pygame.transform.scale(image, (80, 35))
+            image.convert_alpha()
+            LOADING_SCREEN_IMAGES.append(image)
+            continue
+        image = pygame.transform.scale(image, (constants.ALIEN_HITBOX_X, constants.ALIEN_HITBOX_Y))
+        image.convert_alpha()
+        LOADING_SCREEN_IMAGES.append(image)
+    player_img: Surface = pygame.image.load("player_images/player1.png")
+    LOADING_SCREEN_IMAGES.append(player_img)
+
     # Game variables
-    game_data: dict = new_game_data()
+    game_data: dict = new_game_data(True)
     # player state
     player: Player = Player()
     player_projectiles: list[Projectile] = [None]
@@ -30,14 +49,20 @@ def main() -> None:
         for event in pygame.event.get():
             if event.type == pygame.QUIT: # end game if user clicked X to close window
                 game_data["running"] = False
-            if event.type == pygame.MOUSEBUTTONDOWN and game_data["game_over"] and mouse_over_play_again(): # user clicked on play again
-                # reset state
-                game_data = new_game_data()
-                player = Player()
-                player_projectiles = [None]
-                swarm_data = new_swarm_data(game_data)
-                swarm = generate_new_swarm(game_data, swarm_data)
-                alien_projectiles = []
+            if event.type == pygame.MOUSEBUTTONDOWN: # mouse click
+                if game_data["game_over"] and mouse_over_play_again(): # user clicked play again
+                    # reset state
+                    game_data = new_game_data(False)
+                    player = Player()
+                    player_projectiles = [None]
+                    swarm_data = new_swarm_data(game_data)
+                    swarm = generate_new_swarm(game_data, swarm_data)
+                    alien_projectiles = []
+                    continue
+                if game_data["loading_screen"] and mouse_over_play(): # user clicked play
+                    game_data["loading_screen"] = False
+                    continue
+
 
         # run game
         if swarm_empty(swarm): # player cleared swarm/wave
@@ -45,7 +70,7 @@ def main() -> None:
             swarm_data = new_swarm_data(game_data)
             swarm = generate_new_swarm(game_data, swarm_data)
             player.increment_lives()
-        if not game_data["game_over"]:
+        if not game_data["game_over"] and not game_data["loading_screen"]:
             update_physics(screen, game_data, player, player_projectiles, swarm, swarm_data, alien_projectiles)
         
         # check if game is over
@@ -53,7 +78,7 @@ def main() -> None:
             game_data["game_over"] = True
 
         # fill display frame
-        fill_frame(screen, player, player_projectiles, swarm, game_data, alien_projectiles, swarm_data)
+        fill_frame(screen, player, player_projectiles, swarm, game_data, alien_projectiles, swarm_data, LOADING_SCREEN_IMAGES)
         # flip display to put new frame onto screen
         pygame.display.flip()
 
@@ -65,10 +90,11 @@ def main() -> None:
     # end game
     pygame.quit()
 
-def new_game_data() -> dict:
+def new_game_data(loading_screen: bool) -> dict:
     return {
         "running": True,
         "game_over": False,
+        "loading_screen": loading_screen,
         "dt": 0,
         "wave": 1,
         "score": 0,
@@ -305,16 +331,47 @@ def alien_shoot(screen: Surface, alien: Alien, alien_projectiles: list[Projectil
     else:
         alien_projectiles.append(Projectile("cross", 1, alien_pos.x + alien_hitbox.x / 2 - 2, alien_pos.y + alien_hitbox.y / 2))
 
-def fill_frame(screen: Surface, player: Player, player_projectiles: list[Projectile], swarm: list[list[Alien]], game_data: dict, alien_projectiles: list[Projectile], swarm_data: dict) -> None:
+def fill_frame(screen: Surface, player: Player, player_projectiles: list[Projectile], swarm: list[list[Alien]], game_data: dict, alien_projectiles: list[Projectile], swarm_data: dict, LOADING_SCREEN_IMAGES: list) -> None:
     # fill background wiping away previous frame
     screen.fill("black")
+
+    # User hasn't begun game yet
+    if game_data["loading_screen"]:
+        # title
+        Text.text_to_screen(screen, "Space", 450, 20, 140, (255, 255, 255))       
+        Text.text_to_screen(screen, "Invaders", 450, 150, 92, (0, 255, 0))    
+        # alien images
+        screen.blit(LOADING_SCREEN_IMAGES[0], (510, 310))
+        screen.blit(LOADING_SCREEN_IMAGES[1], (513, 380))
+        screen.blit(LOADING_SCREEN_IMAGES[2], (510, 450))
+        screen.blit(LOADING_SCREEN_IMAGES[3], (495, 520))
+        # points text
+        Text.text_to_screen(screen, "= 10 pts", 600, 300, 40, (255, 255, 255))
+        Text.text_to_screen(screen, "= 20 pts", 600, 370, 40, (255, 255, 255))
+        Text.text_to_screen(screen, "= 40 pts", 600, 440, 40, (255, 255, 255))
+        Text.text_to_screen(screen, "= ??? pts", 600, 510, 40, (255, 255, 255))
+        # play 
+        play_text_color: Color = None
+        if mouse_over_play():
+            play_text_color = Color(0, 255, 0)
+        else:
+            play_text_color = Color(255, 255, 255)
+        Text.text_to_screen(screen, "Play", 600, 610, 40, play_text_color)
+        return
+
     # bottom boundary rectangle
-    pygame.draw.rect(screen, Color(0, 255, 0), pygame.Rect(68, constants.SCREEN_SIZE.y - 20, constants.SCREEN_SIZE.x - 136, 5))
-    # draw text
+    pygame.draw.rect(screen, Color(0, 255, 0), pygame.Rect(68, constants.SCREEN_SIZE.y - 50, constants.SCREEN_SIZE.x - 136, 5))
+    # score
     Text.text_to_screen(screen, "Score", 0, 0, 30, (255, 255, 255))
     Text.text_to_screen(screen, game_data["score"], 90, 0, 30, (0, 255, 0))
-    Text.text_to_screen(screen, "Lives", constants.SCREEN_SIZE.x - 130, 0, 30, (255, 255, 255))
-    Text.text_to_screen(screen, player.get_lives(), constants.SCREEN_SIZE.x - 50, 0, 30, (0, 255, 0))
+    # lives
+    Text.text_to_screen(screen, player.get_lives(), 68, constants.SCREEN_SIZE.y - 40, 30, (255, 255, 255))
+    size: int = min(64, (constants.SCREEN_SIZE.x - 136) / (player.get_lives() - 1 + 12))
+    player_img: Surface = pygame.transform.scale(LOADING_SCREEN_IMAGES[4], (size, size / 64 * 34))
+    player_img.convert_alpha()
+    for i in range(player.get_lives() - 1):
+        screen.blit(player_img, (100 + i * (12 + size), constants.SCREEN_SIZE.y - 40))
+
     # if game over show loss screen, else continue to draw all objects
     if game_data["game_over"]:
         # text for game over screen
@@ -329,6 +386,7 @@ def fill_frame(screen: Surface, player: Player, player_projectiles: list[Project
         Text.text_to_screen(screen, "Play Again?", constants.SCREEN_SIZE.x / 2 - 80, constants.SCREEN_SIZE.y / 2, 40, play_again_color)
         player.draw(screen, game_data["dt"])
         return None
+    
     # draw all objects
     # player
     player.draw(screen, game_data["dt"])
@@ -344,6 +402,10 @@ def fill_frame(screen: Surface, player: Player, player_projectiles: list[Project
     # alien projectiles
     for i in range(len(alien_projectiles)):
         alien_projectiles[i].draw(screen)
+
+def mouse_over_play() -> bool:
+    mouse_pos_x, mouse_pos_y = pygame.mouse.get_pos()
+    return mouse_pos_x >= 600 and mouse_pos_x <= 690 and mouse_pos_y >= 610 and mouse_pos_y <= 660
 
 def mouse_over_play_again() -> bool:
     mouse_pos_x, mouse_pos_y = pygame.mouse.get_pos()

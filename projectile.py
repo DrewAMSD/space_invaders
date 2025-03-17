@@ -2,8 +2,9 @@ import pygame
 from pygame import Vector2, Surface, Color
 import constants
 
-class Projectile:
+class Projectile(pygame.sprite.Sprite):
     def __init__(self, projectile_type: str, direction_input: int, x: int, y: int) -> None:
+        super().__init__()
         self.projectile_type: str = projectile_type
         self.pos: Vector2 = Vector2(x, y)
         self.hitbox: Vector2 = Vector2(10, 10)
