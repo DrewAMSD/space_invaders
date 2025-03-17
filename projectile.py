@@ -40,7 +40,7 @@ class Projectile(pygame.sprite.Sprite):
         self.tic += 1
 
     def off_screen(self):
-        return self.pos.y < 0 or self.pos.y + self.hitbox.y > constants.SCREEN_SIZE.y - 20
+        return self.pos.y < 0 or self.pos.y + self.hitbox.y > constants.SCREEN_SIZE.y - 50
 
     def draw(self, screen: pygame.Surface) -> None:
         match self.projectile_type:
