@@ -251,7 +251,7 @@ def swarm_reached_player(swarm_data: dict) -> bool:
         loc_bot -= (constants.ALIEN_HITBOX_Y + constants.ALIEN_OFFSET_Y)
     return loc_bot >= constants.SCREEN_SIZE.y - 200
 
-def update_alien_locations(swarm: list[Projectile], swarm_data: dict) -> None:
+def update_alien_locations(swarm: list[list[Alien]], swarm_data: dict) -> None:
     for r in range(constants.SWARM_ROWS):
         for c in range(constants.SWARM_COLS):
             if swarm[r][c] is None:
@@ -328,15 +328,15 @@ def row_has_aliens(swarm: list[list[Alien]], r: int) -> bool:
 def rect_collision(obj1_pos: Vector2, obj1_hitbox: Vector2, obj2_pos: Vector2, obj2_hitbox: Vector2) -> bool:
     # n = north, e = east, s = south, w = west
     # ob1 coordinates
-    w1 = obj1_pos.x
-    e1 = w1 + obj1_hitbox.x
-    n1 = obj1_pos.y
-    s1 = n1 + obj1_hitbox.y
+    w1: float = obj1_pos.x
+    e1: float = w1 + obj1_hitbox.x
+    n1: float = obj1_pos.y
+    s1: float = n1 + obj1_hitbox.y
     # obj2 coordinates
-    w2 = obj2_pos.x
-    e2 = w2 + obj2_hitbox.x
-    n2 = obj2_pos.y
-    s2 = n2 + obj2_hitbox.y
+    w2: float = obj2_pos.x
+    e2: float = w2 + obj2_hitbox.x
+    n2: float = obj2_pos.y
+    s2: float = n2 + obj2_hitbox.y
     # east side is to the right of the west side of the other object
     # south side is below the north side of the other object 
     return w1 < e2 and w2 < e1 and n1 < s2 and n2 < s1
