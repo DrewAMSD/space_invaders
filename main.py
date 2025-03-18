@@ -44,6 +44,7 @@ def main() -> None:
     swarm_data: dict = new_swarm_data(game_data)
     swarm: list[list[Alien]] = generate_new_swarm(game_data, swarm_data)
     alien_projectiles: list[Projectile] = []
+    spaceship_data: dict = generate_spaceship_data()
 
     # event loop
     while game_data["running"]:
@@ -60,12 +61,12 @@ def main() -> None:
                     swarm_data = new_swarm_data(game_data)
                     swarm = generate_new_swarm(game_data, swarm_data)
                     alien_projectiles = []
+                    spaceship_data = generate_spaceship_data()
                     bunkers = generate_bunkers()
                     continue
                 if game_data["loading_screen"] and mouse_over_play(): # user clicked play
                     game_data["loading_screen"] = False
                     continue
-
 
         # run game
         if swarm_empty(swarm): # player cleared swarm/wave
@@ -74,14 +75,18 @@ def main() -> None:
             swarm = generate_new_swarm(game_data, swarm_data)
             player.increment_lives()
         if not game_data["game_over"] and not game_data["loading_screen"]:
-            update_physics(screen, game_data, player, player_projectiles, swarm, swarm_data, alien_projectiles, bunkers)
+            update_physics(screen, game_data, player, player_projectiles, swarm, swarm_data, alien_projectiles, spaceship_data, bunkers)
         
         # check if game is over
         if player.lost_all_lives() or swarm_reached_player(swarm_data):
             game_data["game_over"] = True
 
+        # check if spaceship data needs to be reset
+        if spaceship_data["reset"]:
+            spaceship_data = generate_spaceship_data()
+
         # fill display frame
-        fill_frame(screen, player, player_projectiles, swarm, game_data, alien_projectiles, swarm_data, bunkers, LOADING_SCREEN_IMAGES)
+        fill_frame(screen, player, player_projectiles, swarm, game_data, alien_projectiles, swarm_data, spaceship_data, bunkers, LOADING_SCREEN_IMAGES)
         # flip display to put new frame onto screen
         pygame.display.flip()
 
@@ -92,6 +97,7 @@ def main() -> None:
 
     # end game
     pygame.quit()
+# end main
 
 def generate_bunkers() -> pygame.sprite.Group:
     group: pygame.sprite.Group = pygame.sprite.Group()
@@ -115,7 +121,7 @@ def new_swarm_data(game_data: dict) -> dict:
     # swarm data variables
     location: Vector2 = Vector2((constants.SCREEN_SIZE.x / 2) - (constants.SWARM_LENGTH / 2), 120)
     location.y += (constants.SWARM_MOV_Y) * min(wave-1, 4)
-    timer: int = constants.SWARM_TIMER - (0.05 * (8 if wave-1 > 8 else wave-1))
+    timer: float = constants.SWARM_TIMER - (0.05 * (8 if wave-1 > 8 else wave-1))
     direction: int = 1 if (wave - 1) % 2 == 0 else -1
     col_has_aliens: list[bool] = [True for c in range(constants.SWARM_COLS)]
     row_has_aliens: list[bool] = [True for r in range(constants.SWARM_ROWS)]
@@ -127,6 +133,19 @@ def new_swarm_data(game_data: dict) -> dict:
         "col_has_aliens": col_has_aliens,
         "row_has_aliens": row_has_aliens,
         "tic": 0,
+    }
+
+def generate_spaceship_data() -> dict:
+    timer: float = random.randint(20, 40)
+    direction: int = 1 if random.randint(0, 1) == 1 else -1
+    x: int = -80 if direction == 1 else constants.SCREEN_SIZE.x + 80
+    y: int = 50
+    spaceship: Alien = Alien("spaceship", x, y, 80, 35)
+    return {
+        "spaceship": spaceship,
+        "timer": timer,
+        "direction": direction,
+        "reset": False,
     }
 
 def generate_new_swarm(game_data: dict, swarm_data: dict) -> list[list[Alien]]:
@@ -144,7 +163,7 @@ def generate_new_swarm(game_data: dict, swarm_data: dict) -> list[list[Alien]]:
                 alien_type = "brute"
             else:
                 alien_type = "tank"
-            row.append(Alien(alien_type, x, y, constants.ALIEN_HITBOX_X, constants.ALIEN_HITBOX_Y, wave))
+            row.append(Alien(alien_type, x, y, constants.ALIEN_HITBOX_X, constants.ALIEN_HITBOX_Y))
         swarm.append(row)
     return swarm
 
@@ -155,9 +174,14 @@ def swarm_empty(swarm: list[list[Alien]]) -> bool:
                 return False
     return True
 
-def update_physics(screen: Surface, game_data: dict, player: Player, player_projectiles: list[Projectile], swarm: list[list[Alien]], swarm_data: dict, alien_projectiles: list[Projectile], bunkers: pygame.sprite.Group) -> None:
+def update_physics(screen: Surface, game_data: dict, player: Player, player_projectiles: list[Projectile], swarm: list[list[Alien]], swarm_data: dict, alien_projectiles: list[Projectile], spaceship_data: dict, bunkers: pygame.sprite.Group) -> None:
     # remove dead aliens who have finished death animation
     remove_dead_aliens(game_data, swarm, swarm_data)
+    # remove dead spaceship
+    if spaceship_data["timer"] < 0:
+        if spaceship_data["spaceship"].has_died():
+            if spaceship_data["spaceship"].death_animation_over(game_data["dt"]):
+                spaceship_data["reset"] = True
     
     # if player is in death animation pause all physics updates exluding removing aliens that have finished death animation(line above)
     if player.get_death_animation() != 0:
@@ -176,6 +200,13 @@ def update_physics(screen: Surface, game_data: dict, player: Player, player_proj
     swarm_data["timer"] -= game_data["dt"]
     if swarm_data["timer"] <= 0:
         move_swarm(swarm, swarm_data)
+    # move spaceship if its on screen
+    if spaceship_data["timer"] < 0:
+        if not spaceship_off_screen(spaceship_data):
+            if not spaceship_data["spaceship"].has_died():
+                spaceship_pos: Vector2 = spaceship_data["spaceship"].get_pos()
+                x: int = spaceship_pos.x + (spaceship_data["direction"] * 150 * game_data["dt"])
+                spaceship_data["spaceship"].update_pos(x, spaceship_pos.y)
     # move projectiles
     move_alien_projectiles(alien_projectiles, game_data)
     move_player_projectile(player_projectiles, game_data)
@@ -187,7 +218,8 @@ def update_physics(screen: Surface, game_data: dict, player: Player, player_proj
         if random_int <= get_chance_to_shoot(len(alien_projectiles), swarm_data):
             alien_shoot(screen, swarm[0][c], alien_projectiles)
     # check for collisions
-    check_collisions(screen, game_data, player, player_projectiles, swarm, swarm_data, alien_projectiles, bunkers)
+    check_collisions(screen, game_data, player, player_projectiles, swarm, swarm_data, alien_projectiles, spaceship_data, bunkers)
+    spaceship_data["timer"] -= game_data["dt"]
     bunkers.update()
     for bunker in bunkers.sprites():
         if bunker.is_destroyed():
@@ -262,7 +294,7 @@ def update_alien_locations(swarm: list[list[Alien]], swarm_data: dict) -> None:
             y: int = r * (constants.ALIEN_HITBOX_Y + constants.ALIEN_OFFSET_Y) + swarm_data["location"].y
             swarm[r][c].update_pos(x, y)
 
-def check_collisions(screen: Surface, game_data: dict, player: Player, player_projectiles: list[Projectile], swarm: list[list[Alien]], swarm_data: dict, alien_projectiles: list[Projectile], bunkers: pygame.sprite.Group) -> None:
+def check_collisions(screen: Surface, game_data: dict, player: Player, player_projectiles: list[Projectile], swarm: list[list[Alien]], swarm_data: dict, alien_projectiles: list[Projectile], spaceship_data: dict, bunkers: pygame.sprite.Group) -> None:
     # check for collisions with bunker blocks, player_projectiles and alien_projectiles
     block_hitbox: Vector2 = Vector2(30, 30)
     for bunker in bunkers.sprites():
@@ -308,6 +340,25 @@ def check_collisions(screen: Surface, game_data: dict, player: Player, player_pr
                 swarm_data["col_has_aliens"][c] = col_has_aliens(swarm, c)
                 swarm_data["row_has_aliens"][r] = row_has_aliens(swarm, r)
                 break
+
+    # check if spaceship is offscreen or collides with player projectile
+    if spaceship_data["timer"] < 0:
+        # out of bounds
+        spaceship_pos: Vector2 = spaceship_data["spaceship"].get_pos()
+        if spaceship_off_screen(spaceship_data):
+            spaceship_data["spaceship"].kill()
+            spaceship_data["reset"] = True
+        # collided with player projectile
+        elif player_projectiles[0] is not None:
+            if rect_collision(player_projectiles[0].get_pos(), player_projectiles[0].get_hitbox(), spaceship_data["spaceship"].get_pos(), spaceship_data["spaceship"].get_hitbox()):
+                game_data["score"] += spaceship_data["spaceship"].get_score()
+                spaceship_data["spaceship"].kill()
+                player_projectiles[0] = None
+
+def spaceship_off_screen(spaceship_data: dict) -> bool:
+    spaceship_pos: Vector2 = spaceship_data["spaceship"].get_pos()
+    direction: int = spaceship_data["direction"]
+    return (direction == -1 and spaceship_pos.x < -80) or (direction == 1 and spaceship_pos.x > constants.SCREEN_SIZE.x + 80)
 
 def col_has_aliens(swarm: list[list[Alien]], c: int) -> bool:
     for r in range(constants.SWARM_ROWS):
@@ -358,7 +409,7 @@ def alien_shoot(screen: Surface, alien: Alien, alien_projectiles: list[Projectil
     else:
         alien_projectiles.append(Projectile("cross", 1, alien_pos.x + alien_hitbox.x / 2 - 2, alien_pos.y + alien_hitbox.y / 2))
 
-def fill_frame(screen: Surface, player: Player, player_projectiles: list[Projectile], swarm: list[list[Alien]], game_data: dict, alien_projectiles: list[Projectile], swarm_data: dict, bunkers: pygame.sprite.Group, LOADING_SCREEN_IMAGES: list) -> None:
+def fill_frame(screen: Surface, player: Player, player_projectiles: list[Projectile], swarm: list[list[Alien]], game_data: dict, alien_projectiles: list[Projectile], swarm_data: dict, spaceship_data: dict, bunkers: pygame.sprite.Group, LOADING_SCREEN_IMAGES: list) -> None:
     # fill background wiping away previous frame
     screen.fill("black")
 
@@ -426,6 +477,8 @@ def fill_frame(screen: Surface, player: Player, player_projectiles: list[Project
             if alien is None: 
                 continue
             alien.draw(screen, swarm_data["tic"])
+    if spaceship_data["timer"] < 0:
+        spaceship_data["spaceship"].draw(screen, 0)
     # player projectile
     if player_projectiles[0] is not None:
         player_projectiles[0].draw(screen)
