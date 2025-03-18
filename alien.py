@@ -90,4 +90,3 @@ def get_alien_images(alien_type: str, hitbox: Vector2) -> list:
     image.convert_alpha()
     images.append(image)
     return images
-
