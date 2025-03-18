@@ -17,7 +17,7 @@ cd space_invaders
 python3 main.py
 ```
 
-Note: In order to ensure the game runs, make sure pygame and python version 3.12+ are installed
+Note: In order to ensure the game runs, make sure python version 3.12+ and pygame are installed
 ```bash
 # downloads for python vary by operating system(Windows, Mac, Linux)
 # check python version
