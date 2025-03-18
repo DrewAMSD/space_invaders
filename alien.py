@@ -1,14 +1,13 @@
 import pygame
-from pygame import Vector2, Surface, Color
+from pygame import Vector2, Surface
 import constants
 
 class Alien(pygame.sprite.Sprite):
     def __init__(self, type_input: str, x: int, y: int, hitbox_x: int, hitbox_y: int, wave: int) -> None:
-        super().__init__()
+        pygame.sprite.Sprite.__init__(self)
         self.type = type_input
         self.hitbox: Vector2 = Vector2(hitbox_x, hitbox_y)
         self.pos: Vector2 = Vector2(x, y)
-        self.color: Color = Color(255, 255, 255)
         self.images: list = get_alien_images(f"alien_images/{self.type}", self.hitbox)
         # managing death animation
         self.is_dead: bool = False

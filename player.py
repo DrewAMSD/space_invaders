@@ -1,14 +1,13 @@
 import pygame
-from pygame import Vector2, Surface, Color
+from pygame import Vector2, Surface
 import constants
 
 class Player(pygame.sprite.Sprite):
     def __init__(self) -> None:
-        super().__init__()
+        pygame.sprite.Sprite.__init__(self)
         self.pos: Vector2 = Vector2(constants.SCREEN_SIZE.x / 4, constants.SCREEN_SIZE.y - 100)
         self.hitbox: Vector2 = Vector2(64, 20) # 32 pixels left and right from self.pos.x, and 20 pixels down from self.pos.y
         self.speed: int = 300 # pixels per second
-        self.color: Color = Color(0, 255, 0)
         self.lives: int = 3
         self.images: list = get_player_images(self.hitbox)
         self.death_animation: int = 0 # frame of death animation, 0 means not playing death animation

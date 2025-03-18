@@ -4,7 +4,7 @@ import constants
 
 class Projectile(pygame.sprite.Sprite):
     def __init__(self, projectile_type: str, direction_input: int, x: int, y: int) -> None:
-        super().__init__()
+        pygame.sprite.Sprite.__init__(self)
         self.projectile_type: str = projectile_type
         self.pos: Vector2 = Vector2(x, y)
         self.hitbox: Vector2 = Vector2(10, 10)

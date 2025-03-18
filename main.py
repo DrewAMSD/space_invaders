@@ -4,6 +4,7 @@ import constants
 from player import *
 from projectile import *
 from alien import *
+from bunker import *
 import Text
 import random
 
@@ -35,6 +36,7 @@ def main() -> None:
 
     # Game variables
     game_data: dict = new_game_data(True)
+    bunkers: pygame.sprite.Group = generate_bunkers()
     # player state
     player: Player = Player()
     player_projectiles: list[Projectile] = [None]
@@ -58,6 +60,7 @@ def main() -> None:
                     swarm_data = new_swarm_data(game_data)
                     swarm = generate_new_swarm(game_data, swarm_data)
                     alien_projectiles = []
+                    bunkers = generate_bunkers()
                     continue
                 if game_data["loading_screen"] and mouse_over_play(): # user clicked play
                     game_data["loading_screen"] = False
@@ -71,14 +74,14 @@ def main() -> None:
             swarm = generate_new_swarm(game_data, swarm_data)
             player.increment_lives()
         if not game_data["game_over"] and not game_data["loading_screen"]:
-            update_physics(screen, game_data, player, player_projectiles, swarm, swarm_data, alien_projectiles)
+            update_physics(screen, game_data, player, player_projectiles, swarm, swarm_data, alien_projectiles, bunkers)
         
         # check if game is over
         if player.lost_all_lives() or swarm_reached_player(swarm_data):
             game_data["game_over"] = True
 
         # fill display frame
-        fill_frame(screen, player, player_projectiles, swarm, game_data, alien_projectiles, swarm_data, LOADING_SCREEN_IMAGES)
+        fill_frame(screen, player, player_projectiles, swarm, game_data, alien_projectiles, swarm_data, bunkers, LOADING_SCREEN_IMAGES)
         # flip display to put new frame onto screen
         pygame.display.flip()
 
@@ -89,6 +92,12 @@ def main() -> None:
 
     # end game
     pygame.quit()
+
+def generate_bunkers() -> pygame.sprite.Group:
+    group: pygame.sprite.Group = pygame.sprite.Group()
+    for i in range(4):
+        group.add(Bunker(295 + i * 220, constants.SCREEN_SIZE.y - 270))
+    return group
 
 def new_game_data(loading_screen: bool) -> dict:
     return {
@@ -146,7 +155,7 @@ def swarm_empty(swarm: list[list[Alien]]) -> bool:
                 return False
     return True
 
-def update_physics(screen: Surface, game_data: dict, player: Player, player_projectiles: list[Projectile], swarm: list[list[Alien]], swarm_data: dict, alien_projectiles: list[Projectile]) -> None:
+def update_physics(screen: Surface, game_data: dict, player: Player, player_projectiles: list[Projectile], swarm: list[list[Alien]], swarm_data: dict, alien_projectiles: list[Projectile], bunkers: pygame.sprite.Group) -> None:
     # remove dead aliens who have finished death animation
     remove_dead_aliens(game_data, swarm, swarm_data)
     
@@ -178,7 +187,11 @@ def update_physics(screen: Surface, game_data: dict, player: Player, player_proj
         if random_int <= get_chance_to_shoot(len(alien_projectiles), swarm_data):
             alien_shoot(screen, swarm[0][c], alien_projectiles)
     # check for collisions
-    check_collisions(screen, game_data, player, player_projectiles, swarm, swarm_data, alien_projectiles)
+    check_collisions(screen, game_data, player, player_projectiles, swarm, swarm_data, alien_projectiles, bunkers)
+    bunkers.update()
+    for bunker in bunkers.sprites():
+        if bunker.is_destroyed():
+            bunkers.remove(bunker)
 
 def remove_dead_aliens(game_data: dict, swarm: list[list[Alien]], swarm_data: dict) -> None:
     for r in range(constants.SWARM_ROWS):
@@ -249,7 +262,21 @@ def update_alien_locations(swarm: list[Projectile], swarm_data: dict) -> None:
             y: int = r * (constants.ALIEN_HITBOX_Y + constants.ALIEN_OFFSET_Y) + swarm_data["location"].y
             swarm[r][c].update_pos(x, y)
 
-def check_collisions(screen: Surface, game_data: dict, player: Player, player_projectiles: list[Projectile], swarm: list[list[Alien]], swarm_data: dict, alien_projectiles: list[Projectile]) -> None:
+def check_collisions(screen: Surface, game_data: dict, player: Player, player_projectiles: list[Projectile], swarm: list[list[Alien]], swarm_data: dict, alien_projectiles: list[Projectile], bunkers: pygame.sprite.Group) -> None:
+    # check for collisions with bunker blocks, player_projectiles and alien_projectiles
+    block_hitbox: Vector2 = Vector2(30, 30)
+    for bunker in bunkers.sprites():
+        blocks: pygame.sprite.Group = bunker.get_blocks()
+        for block in blocks.sprites():
+            if player_projectiles[0] is not None:
+                if rect_collision(player_projectiles[0].get_pos(), player_projectiles[0].get_hitbox(), block.get_pos(), block_hitbox):
+                    player_projectiles[0] = None
+                    block.hit()
+            for alien_projectile in alien_projectiles:
+                if rect_collision(alien_projectile.get_pos(), alien_projectile.get_hitbox(), block.get_pos(), block_hitbox):
+                    alien_projectiles.remove(alien_projectile)
+                    block.hit()
+    
     # remove player projectile if it collides with end of screen
     if player_projectiles[0] is not None and player_projectiles[0].off_screen():
         player_projectiles[0] = None
@@ -331,7 +358,7 @@ def alien_shoot(screen: Surface, alien: Alien, alien_projectiles: list[Projectil
     else:
         alien_projectiles.append(Projectile("cross", 1, alien_pos.x + alien_hitbox.x / 2 - 2, alien_pos.y + alien_hitbox.y / 2))
 
-def fill_frame(screen: Surface, player: Player, player_projectiles: list[Projectile], swarm: list[list[Alien]], game_data: dict, alien_projectiles: list[Projectile], swarm_data: dict, LOADING_SCREEN_IMAGES: list) -> None:
+def fill_frame(screen: Surface, player: Player, player_projectiles: list[Projectile], swarm: list[list[Alien]], game_data: dict, alien_projectiles: list[Projectile], swarm_data: dict, bunkers: pygame.sprite.Group, LOADING_SCREEN_IMAGES: list) -> None:
     # fill background wiping away previous frame
     screen.fill("black")
 
@@ -388,6 +415,9 @@ def fill_frame(screen: Surface, player: Player, player_projectiles: list[Project
         return None
     
     # draw all objects
+    # bunkers
+    for bunker in bunkers.sprites():
+        bunker.draw(screen)
     # player
     player.draw(screen, game_data["dt"])
     # aliens
